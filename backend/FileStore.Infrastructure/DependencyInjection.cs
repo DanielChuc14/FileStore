@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
+        services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();
 
         // Scoped: depende de ICurrentUser y del DbContext, que viven por request.
         services.AddScoped<IAuditLogger, AuditLogger>();

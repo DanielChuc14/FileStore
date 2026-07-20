@@ -34,6 +34,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
+// Lo usa el handler de API Keys para no escribir LastUsedAt en cada request.
+builder.Services.AddMemoryCache();
+
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Falta la seccion de configuracion 'Jwt'.");
 
@@ -67,13 +70,24 @@ builder.Services
             NameClaimType = AuthClaims.Email,
             RoleClaimType = AuthClaims.Role
         };
-    });
+    })
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+        AuthSchemes.ApiKey, _ => { });
 
+// Cada politica declara explicitamente su esquema. Esto es lo que mantiene los
+// dos canales separados: un JWT presentado a la API publica no autentica, y una
+// API Key presentada al panel tampoco. Sin AddAuthenticationSchemes, cualquier
+// principal autenticado por cualquier esquema podria satisfacer la politica.
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AuthPolicies.SuperAdmin, policy =>
-        policy.RequireRole(nameof(UserType.SuperAdmin)))
-    .AddPolicy(AuthPolicies.Client, policy =>
-        policy.RequireRole(nameof(UserType.Client)));
+    .AddPolicy(AuthPolicies.SuperAdmin, policy => policy
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .RequireRole(nameof(UserType.SuperAdmin)))
+    .AddPolicy(AuthPolicies.Client, policy => policy
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .RequireRole(nameof(UserType.Client)))
+    .AddPolicy(AuthPolicies.ApiKey, policy => policy
+        .AddAuthenticationSchemes(AuthSchemes.ApiKey)
+        .RequireAuthenticatedUser());
 
 builder.Services.AddCors(options =>
     options.AddPolicy(AngularDevCorsPolicy, policy => policy

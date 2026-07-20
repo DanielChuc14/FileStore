@@ -18,3 +18,10 @@ public record UpdateClientRequest(
 
 /// <summary>La contraseña se muestra una unica vez; despues solo queda su hash.</summary>
 public record GeneratedPasswordResponse(string Password);
+
+public record CreateApiKeyRequest(string Name, int? RateLimitPerMinute);
+
+public record UpdateApiKeyRequest(
+    string? Name,
+    int? RateLimitPerMinute,
+    bool ClearRateLimitOverride = false);
