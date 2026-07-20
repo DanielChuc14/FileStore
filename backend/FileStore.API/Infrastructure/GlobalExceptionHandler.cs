@@ -24,6 +24,14 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 StatusCodes.Status401Unauthorized,
                 "Invalid credentials.",
                 httpContext),
+            NotFoundException notFound => BuildProblem(
+                StatusCodes.Status404NotFound,
+                notFound.Message,
+                httpContext),
+            ConflictException conflict => BuildProblem(
+                StatusCodes.Status409Conflict,
+                conflict.Message,
+                httpContext),
             _ => BuildUnexpectedProblem(exception, httpContext, logger)
         };
 

@@ -21,5 +21,9 @@ public class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.Property(c => c.QuotaBytes).IsRequired();
         builder.Property(c => c.UsedBytes).IsRequired();
         builder.Property(c => c.IsActive).IsRequired();
+        builder.Property(c => c.IsDeleted).IsRequired();
+
+        // El listado del super-admin siempre excluye las bajas.
+        builder.HasIndex(c => c.IsDeleted);
     }
 }

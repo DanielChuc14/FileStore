@@ -9,7 +9,18 @@ public class Client
 
     public long QuotaBytes { get; set; }
     public long UsedBytes { get; set; }
+
+    /// <summary>Bloqueo reversible: el cliente no puede autenticarse pero conserva todo.</summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Baja de la cuenta. Distinto de IsActive: bloquear es temporal y
+    /// reversible, dar de baja saca al cliente del listado. Los datos siguen en
+    /// la base porque el audit log los referencia.
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 
     /// <summary>Override opcional del default global. Null = usa el valor de AppConfig.</summary>
     public int? TrashRetentionDays { get; set; }

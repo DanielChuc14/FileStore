@@ -1,6 +1,7 @@
 using FileStore.Application.Abstractions;
 using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
+using FileStore.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,10 @@ public static class DependencyInjection
 
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+        services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
+
+        // Scoped: depende de ICurrentUser y del DbContext, que viven por request.
+        services.AddScoped<IAuditLogger, AuditLogger>();
 
         services.AddScoped<DatabaseSeeder>();
 

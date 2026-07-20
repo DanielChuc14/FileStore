@@ -1,6 +1,7 @@
 using System.Text;
 using FileStore.API.Infrastructure;
 using FileStore.Application;
+using FileStore.Application.Abstractions;
 using FileStore.Application.Common;
 using FileStore.Domain.Enums;
 using FileStore.Infrastructure;
@@ -27,6 +28,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// CurrentUser lee los claims del request en curso, asi que necesita acceso a
+// HttpContext y vive por request.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Falta la seccion de configuracion 'Jwt'.");
