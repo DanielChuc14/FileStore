@@ -14,12 +14,15 @@ namespace FileStore.API.Controllers;
 [Route("auth")]
 public class AuthController(ISender sender) : ControllerBase
 {
-    /// <summary>
-    /// Path limitado a /auth: la cookie no viaja en los requests de archivos ni
-    /// del panel, solo donde realmente hace falta. Menos superficie expuesta.
-    /// </summary>
     private const string RefreshCookieName = "fs_refresh";
-    private const string RefreshCookiePath = "/auth";
+
+    /// <summary>
+    /// Path en la raiz para que la cookie funcione igual sin importar bajo que
+    /// prefijo se monte la API (en desarrollo el panel la consume via /api).
+    /// Acotarla a /auth ahorraria unos bytes por request, pero el path no es una
+    /// barrera de seguridad: quien protege la cookie son HttpOnly y SameSite.
+    /// </summary>
+    private const string RefreshCookiePath = "/";
 
     [HttpPost("login")]
     [AllowAnonymous]
