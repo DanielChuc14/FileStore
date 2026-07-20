@@ -43,6 +43,14 @@
     "unblock": "Desbloquear",
     "resetPassword": "Resetear contraseña",
     "remove": "Dar de baja",
+    "removeTitle": "Dar de baja la cuenta",
+    "removeWarning": "Estas por dar de baja a {{email}}. Esto implica:",
+    "removeConfirm": "Si, dar de baja",
+    "removeEffects": {
+      "login": "El cliente ya no podra iniciar sesion",
+      "sessions": "Se cerraran todas sus sesiones abiertas",
+      "data": "Sus archivos y su historial se conservan en la base de datos"
+    },
     "copy": "Copiar",
     "passwordTitle": "Contraseña generada",
     "passwordWarning": "Esta es la unica vez que se muestra la contraseña de {{email}}. Guardala ahora: no se puede recuperar despues.",

@@ -29,6 +29,13 @@ export class Clients implements OnInit {
   protected readonly revealedPassword = signal<string | null>(null);
   protected readonly revealedFor = signal<string | null>(null);
 
+  /**
+   * Cliente pendiente de baja. Se usa un modal propio y no confirm() nativo:
+   * la accion es destructiva y conviene que el dialogo diga que implica, no
+   * solo "¿estas seguro?".
+   */
+  protected readonly pendingRemoval = signal<Client | null>(null);
+
   protected readonly pageSize = 20;
 
   protected readonly createForm = this.fb.nonNullable.group({
@@ -104,11 +111,28 @@ export class Clients implements OnInit {
     });
   }
 
-  protected remove(client: Client): void {
-    if (!confirm(`¿Dar de baja a ${client.email}?`)) {
+  protected askRemove(client: Client): void {
+    this.pendingRemoval.set(client);
+  }
+
+  protected confirmRemove(): void {
+    const client = this.pendingRemoval();
+    if (!client || this.isSaving()) {
       return;
     }
-    this.service.delete(client.id).subscribe(() => this.load());
+
+    this.isSaving.set(true);
+    this.service.delete(client.id).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.pendingRemoval.set(null);
+        this.load();
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.pendingRemoval.set(null);
+      },
+    });
   }
 
   protected copyPassword(): void {

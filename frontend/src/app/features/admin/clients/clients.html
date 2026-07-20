@@ -72,7 +72,7 @@
                   <button type="button" (click)="resetPassword(client)" class="text-slate-600 hover:underline">
                     {{ 'clients.resetPassword' | translate }}
                   </button>
-                  <button type="button" (click)="remove(client)" class="text-red-600 hover:underline">
+                  <button type="button" (click)="askRemove(client)" class="text-red-600 hover:underline">
                     {{ 'clients.remove' | translate }}
                   </button>
                 </div>
@@ -154,6 +154,42 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+<!-- Confirmacion de baja. Modal propio en vez de confirm() nativo: enuncia las
+     consecuencias concretas y el boton destructivo va en rojo -->
+@if (pendingRemoval(); as client) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-2 text-lg font-semibold">{{ 'clients.removeTitle' | translate }}</h2>
+      <p class="mb-2 text-sm text-slate-600">
+        {{ 'clients.removeWarning' | translate: { email: client.email } }}
+      </p>
+      <ul class="mb-4 list-disc space-y-1 pl-5 text-sm text-slate-600">
+        <li>{{ 'clients.removeEffects.login' | translate }}</li>
+        <li>{{ 'clients.removeEffects.sessions' | translate }}</li>
+        <li>{{ 'clients.removeEffects.data' | translate }}</li>
+      </ul>
+
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="pendingRemoval.set(null)"
+          class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          (click)="confirmRemove()"
+          [disabled]="isSaving()"
+          class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {{ 'clients.removeConfirm' | translate }}
+        </button>
+      </div>
     </div>
   </div>
 }
