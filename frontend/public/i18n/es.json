@@ -67,6 +67,35 @@
       "unexpected": "No se pudo completar la operacion"
     }
   },
+  "files": {
+    "title": "Archivos",
+    "root": "Inicio",
+    "empty": "Esta carpeta esta vacia",
+    "upload": "Subir archivo",
+    "uploading": "Subiendo...",
+    "newFolder": "Nueva carpeta",
+    "folderNamePlaceholder": "Nombre de la carpeta",
+    "download": "Descargar",
+    "deleteFileTitle": "Mover a la papelera",
+    "deleteFileWarning": "\"{{name}}\" se movera a la papelera. Va a seguir ocupando cuota hasta que lo elimines definitivamente o se purgue automaticamente.",
+    "deleteFolderTitle": "Eliminar carpeta",
+    "deleteFolderWarning": "Se eliminara \"{{name}}\" con sus subcarpetas. Los archivos que contenga se moveran a la papelera, no se borraran.",
+    "columns": {
+      "name": "Nombre",
+      "size": "Tamaño",
+      "versions": "Versiones",
+      "modified": "Modificado",
+      "actions": "Acciones"
+    },
+    "errors": {
+      "load": "No se pudo cargar el contenido",
+      "folderExists": "Ya existe una carpeta con ese nombre aqui",
+      "tooLarge": "El archivo excede el tamaño maximo o tu cuota disponible",
+      "notAllowed": "Ese tipo de archivo no esta permitido",
+      "download": "No se pudo descargar el archivo",
+      "unexpected": "No se pudo completar la operacion"
+    }
+  },
   "apiKeys": {
     "title": "API Keys",
     "subtitle": "Credenciales para que tus sistemas consuman la API de FileStore.",

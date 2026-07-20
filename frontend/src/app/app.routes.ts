@@ -37,7 +37,10 @@ export const routes: Routes = [
         path: 'api-keys',
         loadComponent: () => import('./features/api-keys/api-keys').then((m) => m.ApiKeys),
       },
-      { path: 'files', ...placeholder('nav.files', 5) },
+      {
+        path: 'files',
+        loadComponent: () => import('./features/files/files').then((m) => m.Files),
+      },
       { path: 'trash', ...placeholder('nav.trash', 6) },
       { path: 'audit', ...placeholder('nav.audit', 7) },
       { path: 'profile', ...placeholder('nav.profile', 8) },
