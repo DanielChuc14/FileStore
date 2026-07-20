@@ -30,6 +30,38 @@
     "title": "Panel",
     "welcome": "Sesion iniciada como {{email}}"
   },
+  "clients": {
+    "title": "Clientes",
+    "create": "Nuevo cliente",
+    "searchPlaceholder": "Buscar por correo o nombre...",
+    "empty": "No hay clientes todavia",
+    "total": "{{count}} cliente(s)",
+    "quotaMb": "Cuota (MB)",
+    "active": "Activo",
+    "blocked": "Bloqueado",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "resetPassword": "Resetear contraseña",
+    "remove": "Dar de baja",
+    "copy": "Copiar",
+    "passwordTitle": "Contraseña generada",
+    "passwordWarning": "Esta es la unica vez que se muestra la contraseña de {{email}}. Guardala ahora: no se puede recuperar despues.",
+    "passwordSaved": "Ya la guarde",
+    "columns": {
+      "email": "Correo",
+      "name": "Nombre",
+      "usage": "Consumo",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "errors": {
+      "emailTaken": "Ese correo ya esta registrado",
+      "unexpected": "No se pudo completar la operacion"
+    }
+  },
+  "placeholder": {
+    "comingSoon": "Esta seccion se construye en la Fase {{phase}}."
+  },
   "common": {
     "loading": "Cargando...",
     "save": "Guardar",

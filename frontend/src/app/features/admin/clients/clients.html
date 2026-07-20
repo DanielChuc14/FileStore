@@ -1,0 +1,193 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between gap-4">
+    <h1 class="text-xl font-semibold">{{ 'clients.title' | translate }}</h1>
+    <button
+      type="button"
+      (click)="openCreate()"
+      class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+    >
+      {{ 'clients.create' | translate }}
+    </button>
+  </div>
+
+  <input
+    type="search"
+    [placeholder]="'clients.searchPlaceholder' | translate"
+    (input)="onSearch($any($event.target).value)"
+    class="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+  />
+
+  <!-- overflow-x-auto: la tabla scrollea sola en pantallas angostas
+       en vez de romper el layout de la pagina -->
+  <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">{{ 'clients.columns.email' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'clients.columns.name' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'clients.columns.usage' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'clients.columns.status' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'clients.columns.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoading()) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'common.loading' | translate }}
+            </td>
+          </tr>
+        } @else if (clients().length === 0) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'clients.empty' | translate }}
+            </td>
+          </tr>
+        } @else {
+          @for (client of clients(); track client.id) {
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="px-4 py-3">{{ client.email }}</td>
+              <td class="px-4 py-3">{{ client.name }}</td>
+              <td class="px-4 py-3 text-slate-600">
+                {{ client.usedBytes | formatBytes }} / {{ client.quotaBytes | formatBytes }}
+              </td>
+              <td class="px-4 py-3">
+                <!-- inline-flex + rounded-full: pastilla de estado -->
+                <span
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                  [class]="
+                    client.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-amber-100 text-amber-800'
+                  "
+                >
+                  {{ (client.isActive ? 'clients.active' : 'clients.blocked') | translate }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex gap-3 text-xs">
+                  <button type="button" (click)="toggleActive(client)" class="text-slate-600 hover:underline">
+                    {{ (client.isActive ? 'clients.block' : 'clients.unblock') | translate }}
+                  </button>
+                  <button type="button" (click)="resetPassword(client)" class="text-slate-600 hover:underline">
+                    {{ 'clients.resetPassword' | translate }}
+                  </button>
+                  <button type="button" (click)="remove(client)" class="text-red-600 hover:underline">
+                    {{ 'clients.remove' | translate }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-slate-500">
+    {{ 'clients.total' | translate: { count: totalCount() } }}
+  </p>
+</div>
+
+<!-- Modal de alta. fixed inset-0 lo fija cubriendo toda la ventana;
+     bg-black/40 es un negro al 40% de opacidad -->
+@if (showCreateModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-4 text-lg font-semibold">{{ 'clients.create' | translate }}</h2>
+
+      <form [formGroup]="createForm" (ngSubmit)="create()" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">
+            {{ 'clients.columns.email' | translate }}
+          </label>
+          <input
+            type="email"
+            formControlName="email"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">
+            {{ 'clients.columns.name' | translate }}
+          </label>
+          <input
+            type="text"
+            formControlName="name"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">
+            {{ 'clients.quotaMb' | translate }}
+          </label>
+          <input
+            type="number"
+            formControlName="quotaMb"
+            min="1"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+          />
+        </div>
+
+        @if (createError(); as key) {
+          <div class="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+            {{ key | translate }}
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            (click)="showCreateModal.set(false)"
+            class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+          >
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+            class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Modal de contraseña: se muestra una unica vez -->
+@if (revealedPassword(); as password) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-2 text-lg font-semibold">{{ 'clients.passwordTitle' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-600">
+        {{ 'clients.passwordWarning' | translate: { email: revealedFor() } }}
+      </p>
+
+      <!-- font-mono para que los caracteres no se confundan al transcribir -->
+      <div class="mb-4 flex items-center gap-2 rounded-md bg-slate-100 p-3">
+        <code class="flex-1 font-mono text-sm break-all">{{ password }}</code>
+        <button
+          type="button"
+          (click)="copyPassword()"
+          class="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          {{ 'clients.copy' | translate }}
+        </button>
+      </div>
+
+      <div class="flex justify-end">
+        <button
+          type="button"
+          (click)="dismissPassword()"
+          class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        >
+          {{ 'clients.passwordSaved' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

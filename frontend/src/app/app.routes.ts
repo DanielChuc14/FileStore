@@ -1,6 +1,15 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, guestGuard } from './core/auth/auth.guards';
+import { authGuard, guestGuard, superAdminGuard } from './core/auth/auth.guards';
+
+/**
+ * `withComponentInputBinding` en app.config hace que estos `data` lleguen al
+ * componente como inputs, sin que Placeholder tenga que leer la ruta.
+ */
+const placeholder = (titleKey: string, phase: number) => ({
+  loadComponent: () => import('./features/placeholder/placeholder').then((m) => m.Placeholder),
+  data: { titleKey, phase },
+});
 
 export const routes: Routes = [
   {
@@ -18,6 +27,17 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'admin/clients',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/admin/clients/clients').then((m) => m.Clients),
+      },
+      { path: 'files', ...placeholder('nav.files', 5) },
+      { path: 'trash', ...placeholder('nav.trash', 6) },
+      { path: 'api-keys', ...placeholder('nav.apiKeys', 4) },
+      { path: 'audit', ...placeholder('nav.audit', 7) },
+      { path: 'profile', ...placeholder('nav.profile', 8) },
     ],
   },
   { path: '**', redirectTo: '' },
