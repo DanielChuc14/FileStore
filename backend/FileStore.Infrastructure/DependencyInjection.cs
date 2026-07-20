@@ -1,3 +1,5 @@
+using FileStore.Application.Abstractions;
+using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +19,19 @@ public static class DependencyInjection
 
         services.AddDbContext<FileStoreDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddScoped<IApplicationDbContext>(sp =>
+            sp.GetRequiredService<FileStoreDbContext>());
+
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection(JwtSettings.SectionName))
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.Secret) && s.Secret.Length >= 32,
+                "Jwt:Secret debe estar configurado y tener al menos 32 caracteres.")
+            .ValidateOnStart();
+
+        services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 
         services.AddScoped<DatabaseSeeder>();
 

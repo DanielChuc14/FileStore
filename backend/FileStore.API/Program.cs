@@ -1,8 +1,14 @@
+using System.Text;
 using FileStore.API.Infrastructure;
 using FileStore.Application;
+using FileStore.Application.Common;
+using FileStore.Domain.Enums;
 using FileStore.Infrastructure;
+using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 const string AngularDevCorsPolicy = "AngularDev";
@@ -22,11 +28,55 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
+    ?? throw new InvalidOperationException("Falta la seccion de configuracion 'Jwt'.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // Por defecto JwtBearer traduce los claims cortos a las URIs largas de
+        // WS-Federation ("role" -> "http://schemas.microsoft.com/.../role").
+        // Eso rompe el RoleClaimType configurado abajo: la politica buscaria
+        // "role" y el claim ya se llamaria distinto. Se desactiva el mapeo.
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+
+            // Sin esto, .NET tolera 5 minutos de desfase por defecto: un token
+            // de 15 minutos viviria 20.
+            ClockSkew = TimeSpan.Zero,
+
+            // Los claims se emiten con nombres cortos; hay que decirle al
+            // validador cuales son, o [Authorize] por rol no encuentra nada.
+            NameClaimType = AuthClaims.Email,
+            RoleClaimType = AuthClaims.Role
+        };
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthPolicies.SuperAdmin, policy =>
+        policy.RequireRole(nameof(UserType.SuperAdmin)))
+    .AddPolicy(AuthPolicies.Client, policy =>
+        policy.RequireRole(nameof(UserType.Client)));
+
 builder.Services.AddCors(options =>
     options.AddPolicy(AngularDevCorsPolicy, policy => policy
         .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
         .AllowAnyHeader()
-        .AllowAnyMethod()));
+        .AllowAnyMethod()
+        // Necesario para que el navegador envie la cookie de refresh.
+        // Es incompatible con AllowAnyOrigin, por eso los origenes son explicitos.
+        .AllowCredentials()));
 
 builder.Services
     .AddHealthChecks()
@@ -58,6 +108,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors(AngularDevCorsPolicy);
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

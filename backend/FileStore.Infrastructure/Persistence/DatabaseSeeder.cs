@@ -1,5 +1,5 @@
+using FileStore.Application.Abstractions;
 using FileStore.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -14,6 +14,7 @@ namespace FileStore.Infrastructure.Persistence;
 public class DatabaseSeeder(
     FileStoreDbContext context,
     IConfiguration configuration,
+    IPasswordHasher passwordHasher,
     ILogger<DatabaseSeeder> logger)
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -45,7 +46,7 @@ public class DatabaseSeeder(
             UpdatedAt = DateTime.UtcNow
         };
 
-        admin.PasswordHash = new PasswordHasher<SuperAdmin>().HashPassword(admin, password);
+        admin.PasswordHash = passwordHasher.Hash(password);
 
         context.SuperAdmins.Add(admin);
         await context.SaveChangesAsync(cancellationToken);

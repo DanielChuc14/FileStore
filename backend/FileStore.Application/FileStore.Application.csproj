@@ -10,6 +10,7 @@
     <!-- NO ACTUALIZAR a 13.x o superior: MediatR cambio a licencia RPL 1.5 (copyleft
          de red) o comercial de pago. 12.5.0 es la ultima version Apache-2.0. -->
     <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
   </ItemGroup>
 
   <PropertyGroup>
