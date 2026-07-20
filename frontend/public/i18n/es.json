@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "FileStore",
+    "tagline": "Gestion de archivos multi-cliente"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "files": "Archivos",
+    "trash": "Papelera",
+    "apiKeys": "API Keys",
+    "audit": "Auditoria",
+    "profile": "Perfil"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "search": "Buscar"
+  }
+}

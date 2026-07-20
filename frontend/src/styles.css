@@ -1,0 +1,8 @@
+/* Tailwind v4 se configura desde CSS, no desde tailwind.config.js.
+   Este unico import trae reset, utilidades y variables de tema. */
+@import 'tailwindcss';
+
+html,
+body {
+  height: 100%;
+}

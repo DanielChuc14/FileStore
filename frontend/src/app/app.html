@@ -1,0 +1,41 @@
+<!--
+  Clases Tailwind usadas aqui:
+  flex / flex-col  -> layout flexible en fila o columna
+  h-full h-14      -> alto total del padre / alto fijo de 3.5rem
+  w-60 shrink-0    -> ancho fijo de 15rem que no se encoge
+  min-w-0 flex-1   -> ocupa el espacio restante y permite truncar contenido
+  border-r border-b-> borde derecho / inferior
+  px-5 py-2 p-6    -> padding horizontal / vertical / en los 4 lados
+  space-y-1        -> separacion vertical entre hijos
+  bg-* text-*      -> color de fondo / texto (el numero es la intensidad)
+  hover:bg-*       -> color de fondo al pasar el mouse
+-->
+<div class="flex h-full bg-slate-50 text-slate-900">
+  <aside class="w-60 shrink-0 border-r border-slate-200 bg-white">
+    <div class="flex h-14 items-center border-b border-slate-200 px-5">
+      <span class="text-lg font-semibold">{{ 'app.name' | translate }}</span>
+    </div>
+
+    <nav class="space-y-1 p-3">
+      @for (item of navItems; track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="bg-slate-100 font-medium"
+          class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+        >
+          {{ item.labelKey | translate }}
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex h-14 items-center border-b border-slate-200 bg-white px-6">
+      <span class="text-sm text-slate-500">{{ 'app.tagline' | translate }}</span>
+    </header>
+
+    <main class="flex-1 overflow-auto p-6">
+      <router-outlet />
+    </main>
+  </div>
+</div>

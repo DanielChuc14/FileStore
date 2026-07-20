@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FileStore.API/FileStore.API.csproj" />
+  <Project Path="FileStore.Application/FileStore.Application.csproj" />
+  <Project Path="FileStore.Domain/FileStore.Domain.csproj" />
+  <Project Path="FileStore.Infrastructure/FileStore.Infrastructure.csproj" />
+</Solution>
