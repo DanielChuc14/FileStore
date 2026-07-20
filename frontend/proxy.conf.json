@@ -1,0 +1,32 @@
+{
+  "/auth": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/admin": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/me": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/files": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/folders": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/trash": {
+    "target": "https://localhost:7249",
+    "secure": false,
+    "changeOrigin": false
+  }
+}

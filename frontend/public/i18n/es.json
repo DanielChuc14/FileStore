@@ -9,7 +9,26 @@
     "trash": "Papelera",
     "apiKeys": "API Keys",
     "audit": "Auditoria",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "clients": "Clientes",
+    "logout": "Cerrar sesion"
+  },
+  "login": {
+    "subtitle": "Inicia sesion para continuar",
+    "email": "Correo electronico",
+    "password": "Contraseña",
+    "submit": "Iniciar sesion",
+    "submitting": "Iniciando sesion...",
+    "errors": {
+      "emailInvalid": "Ingresa un correo electronico valido",
+      "passwordRequired": "La contraseña es obligatoria",
+      "invalidCredentials": "Correo o contraseña incorrectos",
+      "unexpected": "No se pudo conectar con el servidor"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Sesion iniciada como {{email}}"
   },
   "common": {
     "loading": "Cargando...",
