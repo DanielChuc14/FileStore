@@ -20,18 +20,27 @@ public class JwtTokenGenerator(IOptions<JwtSettings> options) : IJwtTokenGenerat
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(_settings.AccessTokenMinutes);
 
+        var claims = new Dictionary<string, object>
+        {
+            [AuthClaims.UserId] = userId.ToString(),
+            [AuthClaims.Email] = email,
+            [AuthClaims.Role] = userType.ToString(),
+            [JwtRegisteredClaimNames.Jti] = Guid.CreateVersion7().ToString()
+        };
+
+        // Solo un cliente es dueño de contenido. El super-admin no lleva este
+        // claim, y por eso la politica de /files y /folders lo deja afuera.
+        if (userType == UserType.Client)
+        {
+            claims[AuthClaims.ClientId] = userId.ToString();
+        }
+
         var descriptor = new SecurityTokenDescriptor
         {
             Issuer = _settings.Issuer,
             Audience = _settings.Audience,
             Expires = expiresAt,
-            Claims = new Dictionary<string, object>
-            {
-                [AuthClaims.UserId] = userId.ToString(),
-                [AuthClaims.Email] = email,
-                [AuthClaims.Role] = userType.ToString(),
-                [JwtRegisteredClaimNames.Jti] = Guid.CreateVersion7().ToString()
-            },
+            Claims = claims,
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret)),
                 SecurityAlgorithms.HmacSha256)

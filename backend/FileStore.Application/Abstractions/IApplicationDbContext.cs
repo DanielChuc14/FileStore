@@ -23,4 +23,13 @@ public interface IApplicationDbContext
     DbSet<RefreshToken> RefreshTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Transaccion explicita. Hace falta cuando una operacion necesita mas de un
+    /// SaveChanges para resolver dependencias circulares entre entidades y aun
+    /// asi tiene que ser atomica.
+    /// </summary>
+    Task<IAsyncDisposable> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
 }

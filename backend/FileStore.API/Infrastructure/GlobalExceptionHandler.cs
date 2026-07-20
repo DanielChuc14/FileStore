@@ -32,6 +32,17 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 StatusCodes.Status409Conflict,
                 conflict.Message,
                 httpContext),
+            PayloadTooLargeException tooLarge => BuildProblem(
+                StatusCodes.Status413PayloadTooLarge,
+                tooLarge.Message,
+                httpContext),
+            ValidationFailedException failed => new ValidationProblemDetails(
+                new Dictionary<string, string[]> { [failed.Property] = [failed.Error] })
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "One or more validation errors occurred.",
+                Instance = httpContext.Request.Path
+            },
             _ => BuildUnexpectedProblem(exception, httpContext, logger)
         };
 

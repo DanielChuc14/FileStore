@@ -18,6 +18,13 @@ public class FileStoreDbContext(DbContextOptions<FileStoreDbContext> options)
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public async Task<IAsyncDisposable> BeginTransactionAsync(
+        CancellationToken cancellationToken = default) =>
+        await Database.BeginTransactionAsync(cancellationToken);
+
+    public Task CommitTransactionAsync(CancellationToken cancellationToken = default) =>
+        Database.CurrentTransaction?.CommitAsync(cancellationToken) ?? Task.CompletedTask;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FileStoreDbContext).Assembly);

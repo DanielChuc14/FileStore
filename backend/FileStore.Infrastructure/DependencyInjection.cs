@@ -2,6 +2,7 @@ using FileStore.Application.Abstractions;
 using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
 using FileStore.Infrastructure.Services;
+using FileStore.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,8 +37,18 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
         services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();
 
+        services.AddOptions<StorageSettings>()
+            .Bind(configuration.GetSection(StorageSettings.SectionName))
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.BasePath),
+                "Storage:BasePath debe estar configurado.")
+            .ValidateOnStart();
+
+        services.AddSingleton<IStorageService, LocalFileStorageService>();
+
         // Scoped: depende de ICurrentUser y del DbContext, que viven por request.
         services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddScoped<IAppConfigReader, AppConfigReader>();
 
         services.AddScoped<DatabaseSeeder>();
 

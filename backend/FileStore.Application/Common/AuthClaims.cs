@@ -24,6 +24,14 @@ public static class AuthPolicies
 
     /// <summary>Endpoints de la API publica, autenticados con API Key y no con JWT.</summary>
     public const string ApiKey = nameof(ApiKey);
+
+    /// <summary>
+    /// Acceso al contenido de un cliente (/files, /folders, /trash). Admite los
+    /// dos canales, API Key y JWT de rol Client, porque el explorador del panel
+    /// consume los mismos endpoints que una integracion. Exige el claim
+    /// client_id, lo que deja afuera al super-admin.
+    /// </summary>
+    public const string ClientContent = nameof(ClientContent);
 }
 
 public static class AuthSchemes

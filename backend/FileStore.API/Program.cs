@@ -87,7 +87,14 @@ builder.Services.AddAuthorizationBuilder()
         .RequireRole(nameof(UserType.Client)))
     .AddPolicy(AuthPolicies.ApiKey, policy => policy
         .AddAuthenticationSchemes(AuthSchemes.ApiKey)
-        .RequireAuthenticatedUser());
+        .RequireAuthenticatedUser())
+    // Unica politica que admite los dos esquemas: el explorador del panel y una
+    // integracion externa consumen exactamente los mismos endpoints. Exigir el
+    // claim client_id excluye al super-admin, que administra cuentas pero no
+    // accede al contenido de nadie.
+    .AddPolicy(AuthPolicies.ClientContent, policy => policy
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthSchemes.ApiKey)
+        .RequireClaim(AuthClaims.ClientId));
 
 builder.Services.AddCors(options =>
     options.AddPolicy(AngularDevCorsPolicy, policy => policy
