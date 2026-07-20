@@ -67,6 +67,34 @@
       "unexpected": "No se pudo completar la operacion"
     }
   },
+  "apiKeys": {
+    "title": "API Keys",
+    "subtitle": "Credenciales para que tus sistemas consuman la API de FileStore.",
+    "create": "Nueva API Key",
+    "empty": "No tenes API Keys todavia",
+    "namePlaceholder": "produccion, staging, mobile-app...",
+    "defaultLimit": "Por defecto",
+    "never": "Nunca",
+    "active": "Activa",
+    "revoked": "Revocada",
+    "rotate": "Rotar",
+    "revoke": "Revocar",
+    "rotateTitle": "Rotar la API Key",
+    "rotateWarning": "Se generara una key nueva para \"{{name}}\" y la actual dejara de funcionar de inmediato. Actualiza tus sistemas antes de rotar.",
+    "revokeTitle": "Revocar la API Key",
+    "revokeWarning": "\"{{name}}\" dejara de funcionar de inmediato y no se puede reactivar. Cualquier sistema que la use perdera el acceso.",
+    "valueTitle": "API Key generada",
+    "valueWarning": "Esta es la unica vez que se muestra el valor completo. Guardalo ahora: no se puede recuperar despues.",
+    "usageHint": "Enviala en el header de cada peticion:",
+    "columns": {
+      "name": "Nombre",
+      "prefix": "Prefijo",
+      "rateLimit": "Limite por minuto",
+      "lastUsed": "Ultimo uso",
+      "status": "Estado",
+      "actions": "Acciones"
+    }
+  },
   "placeholder": {
     "comingSoon": "Esta seccion se construye en la Fase {{phase}}."
   },

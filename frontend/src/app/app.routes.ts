@@ -33,9 +33,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/clients/clients').then((m) => m.Clients),
       },
+      {
+        path: 'api-keys',
+        loadComponent: () => import('./features/api-keys/api-keys').then((m) => m.ApiKeys),
+      },
       { path: 'files', ...placeholder('nav.files', 5) },
       { path: 'trash', ...placeholder('nav.trash', 6) },
-      { path: 'api-keys', ...placeholder('nav.apiKeys', 4) },
       { path: 'audit', ...placeholder('nav.audit', 7) },
       { path: 'profile', ...placeholder('nav.profile', 8) },
     ],
