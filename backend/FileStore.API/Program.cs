@@ -124,8 +124,12 @@ await using (var scope = app.Services.CreateAsyncScope())
     await seeder.SeedAsync();
 }
 
-app.UseExceptionHandler();
+// Serilog va PRIMERO para que quede por fuera del manejador de excepciones y
+// registre el codigo que realmente recibe el cliente. Al reves, una excepcion
+// mapeada a 409 o 404 se loguearia como 500, porque Serilog la veria antes de
+// que el handler reescriba la respuesta.
 app.UseSerilogRequestLogging();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

@@ -8,6 +8,7 @@ using FileStore.Application.Features.Files.GetById;
 using FileStore.Application.Features.Files.GetList;
 using FileStore.Application.Features.Files.Update;
 using FileStore.Application.Features.Files.Upload;
+using FileStore.Application.Features.Files.Versions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -104,6 +105,27 @@ public class FilesController(ISender sender) : ControllerBase
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await sender.Send(new DeleteFileCommand(id), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("{id:guid}/versions")]
+    [ProducesResponseType<IReadOnlyList<FileVersionDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<FileVersionDto>>> GetVersions(
+        Guid id,
+        CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new GetFileVersionsQuery(id), cancellationToken));
+
+    /// <summary>Reapunta la version vigente. No crea una version nueva.</summary>
+    [HttpPost("{id:guid}/versions/{versionNumber:int}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreVersion(
+        Guid id,
+        int versionNumber,
+        CancellationToken cancellationToken)
+    {
+        await sender.Send(new RestoreVersionCommand(id, versionNumber), cancellationToken);
         return NoContent();
     }
 }

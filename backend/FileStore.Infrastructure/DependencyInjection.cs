@@ -1,5 +1,6 @@
 using FileStore.Application.Abstractions;
 using FileStore.Infrastructure.Authentication;
+using FileStore.Infrastructure.BackgroundJobs;
 using FileStore.Infrastructure.Persistence;
 using FileStore.Infrastructure.Services;
 using FileStore.Infrastructure.Storage;
@@ -49,6 +50,12 @@ public static class DependencyInjection
         // Scoped: depende de ICurrentUser y del DbContext, que viven por request.
         services.AddScoped<IAuditLogger, AuditLogger>();
         services.AddScoped<IAppConfigReader, AppConfigReader>();
+        services.AddScoped<IFileEraser, FileEraser>();
+
+        services.Configure<TrashPurgeSettings>(
+            configuration.GetSection(TrashPurgeSettings.SectionName));
+
+        services.AddHostedService<TrashPurgeService>();
 
         services.AddScoped<DatabaseSeeder>();
 
