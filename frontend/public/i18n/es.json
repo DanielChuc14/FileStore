@@ -217,6 +217,32 @@
       "actions": "Acciones"
     }
   },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Datos de tu cuenta y cambio de contraseña.",
+    "account": "Cuenta",
+    "quota": "Consumo",
+    "memberSince": "Cliente desde",
+    "maxFileSize": "Tamaño máximo por archivo",
+    "retention": "Retención en papelera",
+    "systemDefault": "Valor del sistema",
+    "days": "días",
+    "changePassword": "Cambiar contraseña",
+    "changePasswordHint": "Al cambiarla se cerrarán tus demás sesiones abiertas, pero no esta.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Contraseña nueva",
+    "confirmPassword": "Repetir contraseña nueva",
+    "passwordHint": "Mínimo 12 caracteres.",
+    "passwordChanged": "Contraseña actualizada. Tus otras sesiones se cerraron.",
+    "errors": {
+      "load": "No se pudo cargar el perfil",
+      "wrongPassword": "La contraseña actual es incorrecta",
+      "invalidPassword": "La contraseña nueva no cumple los requisitos",
+      "mismatch": "Las contraseñas nuevas no coinciden",
+      "tooShort": "Debe tener al menos 12 caracteres",
+      "unexpected": "No se pudo completar la operación"
+    }
+  },
   "placeholder": {
     "comingSoon": "Esta sección se construye en la Fase {{phase}}."
   },

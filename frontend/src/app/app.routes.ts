@@ -65,7 +65,11 @@ export const routes: Routes = [
         canActivate: [clientGuard],
         loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
       },
-      { path: 'profile', canActivate: [clientGuard], ...placeholder('nav.profile', 8) },
+      {
+        path: 'profile',
+        canActivate: [clientGuard],
+        loadComponent: () => import('./features/profile/profile').then((m) => m.ProfileView),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
