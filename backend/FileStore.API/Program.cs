@@ -284,3 +284,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.Run();
+
+// Con top-level statements, la clase Program generada es interna. Los tests de
+// integracion la necesitan publica para WebApplicationFactory<Program>.
+public partial class Program;
