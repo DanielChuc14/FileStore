@@ -1,26 +1,26 @@
 {
   "app": {
     "name": "FileStore",
-    "tagline": "Gestion de archivos multi-cliente"
+    "tagline": "Gestión de archivos multi-cliente"
   },
   "nav": {
     "dashboard": "Panel",
     "files": "Archivos",
     "trash": "Papelera",
     "apiKeys": "API Keys",
-    "audit": "Auditoria",
+    "audit": "Auditoría",
     "profile": "Perfil",
     "clients": "Clientes",
-    "logout": "Cerrar sesion"
+    "logout": "Cerrar sesión"
   },
   "login": {
-    "subtitle": "Inicia sesion para continuar",
-    "email": "Correo electronico",
+    "subtitle": "Inicia sesión para continuar",
+    "email": "Correo electrónico",
     "password": "Contraseña",
-    "submit": "Iniciar sesion",
-    "submitting": "Iniciando sesion...",
+    "submit": "Iniciar sesión",
+    "submitting": "Iniciando sesión...",
     "errors": {
-      "emailInvalid": "Ingresa un correo electronico valido",
+      "emailInvalid": "Ingresa un correo electrónico válido",
       "passwordRequired": "La contraseña es obligatoria",
       "invalidCredentials": "Correo o contraseña incorrectos",
       "unexpected": "No se pudo conectar con el servidor"
@@ -28,13 +28,13 @@
   },
   "dashboard": {
     "title": "Panel",
-    "welcome": "Sesion iniciada como {{email}}"
+    "welcome": "Sesión iniciada como {{email}}"
   },
   "clients": {
     "title": "Clientes",
     "create": "Nuevo cliente",
     "searchPlaceholder": "Buscar por correo o nombre...",
-    "empty": "No hay clientes todavia",
+    "empty": "No hay clientes todavía",
     "total": "{{count}} cliente(s)",
     "quotaMb": "Cuota (MB)",
     "active": "Activo",
@@ -44,17 +44,17 @@
     "resetPassword": "Resetear contraseña",
     "remove": "Dar de baja",
     "removeTitle": "Dar de baja la cuenta",
-    "removeWarning": "Estas por dar de baja a {{email}}. Esto implica:",
-    "removeConfirm": "Si, dar de baja",
+    "removeWarning": "Estás por dar de baja a {{email}}. Esto implica:",
+    "removeConfirm": "Sí, dar de baja",
     "removeEffects": {
-      "login": "El cliente ya no podra iniciar sesion",
-      "sessions": "Se cerraran todas sus sesiones abiertas",
+      "login": "El cliente ya no podrá iniciar sesión",
+      "sessions": "Se cerrarán todas sus sesiones abiertas",
       "data": "Sus archivos y su historial se conservan en la base de datos"
     },
     "copy": "Copiar",
     "passwordTitle": "Contraseña generada",
-    "passwordWarning": "Esta es la unica vez que se muestra la contraseña de {{email}}. Guardala ahora: no se puede recuperar despues.",
-    "passwordSaved": "Ya la guarde",
+    "passwordWarning": "Esta es la única vez que se muestra la contraseña de {{email}}. Guárdala ahora: no se puede recuperar después.",
+    "passwordSaved": "Ya la guardé",
     "columns": {
       "email": "Correo",
       "name": "Nombre",
@@ -63,14 +63,14 @@
       "actions": "Acciones"
     },
     "errors": {
-      "emailTaken": "Ese correo ya esta registrado",
-      "unexpected": "No se pudo completar la operacion"
+      "emailTaken": "Ese correo ya está registrado",
+      "unexpected": "No se pudo completar la operación"
     }
   },
   "files": {
     "title": "Archivos",
     "root": "Inicio",
-    "empty": "Esta carpeta esta vacia",
+    "empty": "Esta carpeta está vacía",
     "upload": "Subir archivo",
     "uploading": "Subiendo...",
     "newFolder": "Nueva carpeta",
@@ -78,14 +78,14 @@
     "download": "Descargar",
     "versions": "Versiones",
     "versionsTitle": "Historial de versiones",
-    "versionNumber": "Version",
+    "versionNumber": "Versión",
     "currentVersion": "Vigente",
     "restoreVersion": "Restaurar",
-    "versionsHint": "Restaurar una version anterior no crea una version nueva ni consume cuota adicional: solo cambia cual es la vigente.",
+    "versionsHint": "Restaurar una versión anterior no crea una versión nueva ni consume cuota adicional: solo cambia cuál es la vigente.",
     "deleteFileTitle": "Mover a la papelera",
-    "deleteFileWarning": "\"{{name}}\" se movera a la papelera. Va a seguir ocupando cuota hasta que lo elimines definitivamente o se purgue automaticamente.",
+    "deleteFileWarning": "\"{{name}}\" se moverá a la papelera. Va a seguir ocupando cuota hasta que lo elimines definitivamente o se purgue automáticamente.",
     "deleteFolderTitle": "Eliminar carpeta",
-    "deleteFolderWarning": "Se eliminara \"{{name}}\" con sus subcarpetas. Los archivos que contenga se moveran a la papelera, no se borraran.",
+    "deleteFolderWarning": "Se eliminará \"{{name}}\" con sus subcarpetas. Los archivos que contenga se moverán a la papelera, no se borrarán.",
     "columns": {
       "name": "Nombre",
       "size": "Tamaño",
@@ -95,25 +95,27 @@
     },
     "errors": {
       "load": "No se pudo cargar el contenido",
-      "folderExists": "Ya existe una carpeta con ese nombre aqui",
-      "tooLarge": "El archivo excede el tamaño maximo o tu cuota disponible",
-      "notAllowed": "Ese tipo de archivo no esta permitido",
+      "folderExists": "Ya existe una carpeta con ese nombre aquí",
+      "tooLarge": "El archivo excede el tamaño máximo o tu cuota disponible",
+      "notAllowed": "Ese tipo de archivo no está permitido",
       "download": "No se pudo descargar el archivo",
-      "unexpected": "No se pudo completar la operacion"
+      "unexpected": "No se pudo completar la operación"
     }
   },
   "trash": {
     "title": "Papelera",
     "subtitle": "Los archivos eliminados siguen ocupando cuota hasta que se purgan.",
-    "empty": "La papelera esta vacia",
+    "empty": "La papelera está vacía",
     "deletedAt": "Eliminado",
     "purgeAt": "Se purga",
-    "inDays": "En {{days}} dia(s)",
+    "today": "Hoy",
+    "inOneDay": "Mañana",
+    "inDays": "En {{days}} días",
     "restore": "Restaurar",
     "purgeNow": "Eliminar definitivamente",
     "purgeTitle": "Eliminar definitivamente",
-    "purgeWarning": "Estas por eliminar \"{{name}}\" de forma permanente. Esto implica:",
-    "purgeConfirm": "Si, eliminar",
+    "purgeWarning": "Estás por eliminar \"{{name}}\" de forma permanente. Esto implica:",
+    "purgeConfirm": "Sí, eliminar",
     "purgeEffects": {
       "versions": "Se borran todas sus versiones del disco",
       "quota": "Se libera la cuota que ocupaba",
@@ -122,15 +124,15 @@
     "errors": {
       "load": "No se pudo cargar la papelera",
       "nameTaken": "Ya existe un archivo con ese nombre en el destino. Renombra o mueve el existente antes de restaurar.",
-      "unexpected": "No se pudo completar la operacion"
+      "unexpected": "No se pudo completar la operación"
     }
   },
   "apiKeys": {
     "title": "API Keys",
     "subtitle": "Credenciales para que tus sistemas consuman la API de FileStore.",
     "create": "Nueva API Key",
-    "empty": "No tenes API Keys todavia",
-    "namePlaceholder": "produccion, staging, mobile-app...",
+    "empty": "No tenés API Keys todavía",
+    "namePlaceholder": "producción, staging, mobile-app...",
     "defaultLimit": "Por defecto",
     "never": "Nunca",
     "active": "Activa",
@@ -138,23 +140,23 @@
     "rotate": "Rotar",
     "revoke": "Revocar",
     "rotateTitle": "Rotar la API Key",
-    "rotateWarning": "Se generara una key nueva para \"{{name}}\" y la actual dejara de funcionar de inmediato. Actualiza tus sistemas antes de rotar.",
+    "rotateWarning": "Se generará una key nueva para \"{{name}}\" y la actual dejará de funcionar de inmediato. Actualiza tus sistemas antes de rotar.",
     "revokeTitle": "Revocar la API Key",
-    "revokeWarning": "\"{{name}}\" dejara de funcionar de inmediato y no se puede reactivar. Cualquier sistema que la use perdera el acceso.",
+    "revokeWarning": "\"{{name}}\" dejará de funcionar de inmediato y no se puede reactivar. Cualquier sistema que la use perderá el acceso.",
     "valueTitle": "API Key generada",
-    "valueWarning": "Esta es la unica vez que se muestra el valor completo. Guardalo ahora: no se puede recuperar despues.",
-    "usageHint": "Enviala en el header de cada peticion:",
+    "valueWarning": "Esta es la única vez que se muestra el valor completo. Guárdalo ahora: no se puede recuperar después.",
+    "usageHint": "Envíala en el header de cada petición:",
     "columns": {
       "name": "Nombre",
       "prefix": "Prefijo",
-      "rateLimit": "Limite por minuto",
-      "lastUsed": "Ultimo uso",
+      "rateLimit": "Límite por minuto",
+      "lastUsed": "Último uso",
       "status": "Estado",
       "actions": "Acciones"
     }
   },
   "placeholder": {
-    "comingSoon": "Esta seccion se construye en la Fase {{phase}}."
+    "comingSoon": "Esta sección se construye en la Fase {{phase}}."
   },
   "common": {
     "loading": "Cargando...",

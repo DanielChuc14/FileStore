@@ -89,7 +89,7 @@
                 <button
                   type="button"
                   (click)="pendingDeleteFolder.set(folder)"
-                  class="text-xs text-red-600 hover:underline"
+                  class="-my-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:underline"
                 >
                   {{ 'common.delete' | translate }}
                 </button>
@@ -109,14 +109,14 @@
               <td class="px-4 py-3 text-slate-600">{{ file.versionCount }}</td>
               <td class="px-4 py-3 text-slate-600">{{ file.updatedAt | date: 'short' }}</td>
               <td class="px-4 py-3">
-                <div class="flex gap-3 text-xs">
-                  <button type="button" (click)="download(file)" class="text-slate-600 hover:underline">
+                <div class="-my-1 flex gap-1 text-xs">
+                  <button type="button" (click)="download(file)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                     {{ 'files.download' | translate }}
                   </button>
-                  <button type="button" (click)="openVersions(file)" class="text-slate-600 hover:underline">
+                  <button type="button" (click)="openVersions(file)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                     {{ 'files.versions' | translate }}
                   </button>
-                  <button type="button" (click)="pendingDeleteFile.set(file)" class="text-red-600 hover:underline">
+                  <button type="button" (click)="pendingDeleteFile.set(file)" class="rounded px-2 py-1 text-red-600 hover:bg-red-50 hover:underline">
                     {{ 'common.delete' | translate }}
                   </button>
                 </div>
@@ -190,12 +190,12 @@
                   <td class="px-3 py-2 text-slate-600">{{ version.sizeBytes | formatBytes }}</td>
                   <td class="px-3 py-2 text-slate-600">{{ version.createdAt | date: 'short' }}</td>
                   <td class="px-3 py-2">
-                    <div class="flex gap-3 text-xs">
-                      <button type="button" (click)="downloadVersion(version)" class="text-slate-600 hover:underline">
+                    <div class="-my-1 flex gap-1 text-xs">
+                      <button type="button" (click)="downloadVersion(version)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                         {{ 'files.download' | translate }}
                       </button>
                       @if (!version.isCurrent) {
-                        <button type="button" (click)="restoreVersion(version)" class="text-slate-600 hover:underline">
+                        <button type="button" (click)="restoreVersion(version)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                           {{ 'files.restoreVersion' | translate }}
                         </button>
                       }

@@ -65,14 +65,14 @@
                 </span>
               </td>
               <td class="px-4 py-3">
-                <div class="flex gap-3 text-xs">
-                  <button type="button" (click)="toggleActive(client)" class="text-slate-600 hover:underline">
+                <div class="-my-1 flex gap-1 text-xs">
+                  <button type="button" (click)="toggleActive(client)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                     {{ (client.isActive ? 'clients.block' : 'clients.unblock') | translate }}
                   </button>
-                  <button type="button" (click)="resetPassword(client)" class="text-slate-600 hover:underline">
+                  <button type="button" (click)="resetPassword(client)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
                     {{ 'clients.resetPassword' | translate }}
                   </button>
-                  <button type="button" (click)="askRemove(client)" class="text-red-600 hover:underline">
+                  <button type="button" (click)="askRemove(client)" class="rounded px-2 py-1 text-red-600 hover:bg-red-50 hover:underline">
                     {{ 'clients.remove' | translate }}
                   </button>
                 </div>

@@ -23,6 +23,17 @@ export class Trash implements OnInit {
     this.load();
   }
 
+  /**
+   * Clave de traduccion segun los dias restantes. Se resuelve en el componente
+   * y no con "dia(s)" en el texto: esa forma se lee como plantilla sin terminar.
+   */
+  protected purgeLabelKey(days: number): string {
+    if (days <= 0) {
+      return 'trash.today';
+    }
+    return days === 1 ? 'trash.inOneDay' : 'trash.inDays';
+  }
+
   protected load(): void {
     this.isLoading.set(true);
     this.service.listTrash().subscribe({
