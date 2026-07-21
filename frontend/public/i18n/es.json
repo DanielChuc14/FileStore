@@ -76,6 +76,12 @@
     "newFolder": "Nueva carpeta",
     "folderNamePlaceholder": "Nombre de la carpeta",
     "download": "Descargar",
+    "versions": "Versiones",
+    "versionsTitle": "Historial de versiones",
+    "versionNumber": "Version",
+    "currentVersion": "Vigente",
+    "restoreVersion": "Restaurar",
+    "versionsHint": "Restaurar una version anterior no crea una version nueva ni consume cuota adicional: solo cambia cual es la vigente.",
     "deleteFileTitle": "Mover a la papelera",
     "deleteFileWarning": "\"{{name}}\" se movera a la papelera. Va a seguir ocupando cuota hasta que lo elimines definitivamente o se purgue automaticamente.",
     "deleteFolderTitle": "Eliminar carpeta",
@@ -93,6 +99,29 @@
       "tooLarge": "El archivo excede el tamaño maximo o tu cuota disponible",
       "notAllowed": "Ese tipo de archivo no esta permitido",
       "download": "No se pudo descargar el archivo",
+      "unexpected": "No se pudo completar la operacion"
+    }
+  },
+  "trash": {
+    "title": "Papelera",
+    "subtitle": "Los archivos eliminados siguen ocupando cuota hasta que se purgan.",
+    "empty": "La papelera esta vacia",
+    "deletedAt": "Eliminado",
+    "purgeAt": "Se purga",
+    "inDays": "En {{days}} dia(s)",
+    "restore": "Restaurar",
+    "purgeNow": "Eliminar definitivamente",
+    "purgeTitle": "Eliminar definitivamente",
+    "purgeWarning": "Estas por eliminar \"{{name}}\" de forma permanente. Esto implica:",
+    "purgeConfirm": "Si, eliminar",
+    "purgeEffects": {
+      "versions": "Se borran todas sus versiones del disco",
+      "quota": "Se libera la cuota que ocupaba",
+      "irreversible": "No se puede deshacer"
+    },
+    "errors": {
+      "load": "No se pudo cargar la papelera",
+      "nameTaken": "Ya existe un archivo con ese nombre en el destino. Renombra o mueve el existente antes de restaurar.",
       "unexpected": "No se pudo completar la operacion"
     }
   },
@@ -133,6 +162,7 @@
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "confirm": "Confirmar",
+    "close": "Cerrar",
     "search": "Buscar"
   }
 }

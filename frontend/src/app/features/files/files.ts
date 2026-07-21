@@ -5,6 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { FileService } from '../../core/files/file.service';
 import { Crumb, Folder, StoredFile } from '../../core/files/file.models';
+import { FileVersion } from '../../core/files/trash.models';
 import { FormatBytesPipe } from '../../shared/format-bytes.pipe';
 
 @Component({
@@ -29,6 +30,11 @@ export class Files implements OnInit {
   protected readonly showFolderModal = signal(false);
   protected readonly pendingDeleteFile = signal<StoredFile | null>(null);
   protected readonly pendingDeleteFolder = signal<Folder | null>(null);
+
+  /** Archivo cuyo historial de versiones se esta viendo. */
+  protected readonly versionsFor = signal<StoredFile | null>(null);
+  protected readonly versions = signal<FileVersion[]>([]);
+  protected readonly isLoadingVersions = signal(false);
 
   protected readonly folderForm = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -139,6 +145,58 @@ export class Files implements OnInit {
         URL.revokeObjectURL(url);
       },
       error: () => this.errorKey.set('files.errors.download'),
+    });
+  }
+
+  protected openVersions(file: StoredFile): void {
+    this.versionsFor.set(file);
+    this.isLoadingVersions.set(true);
+    this.versions.set([]);
+
+    this.service.listVersions(file.id).subscribe({
+      next: (versions) => {
+        this.versions.set(versions);
+        this.isLoadingVersions.set(false);
+      },
+      error: () => {
+        this.isLoadingVersions.set(false);
+        this.errorKey.set('files.errors.unexpected');
+      },
+    });
+  }
+
+  protected downloadVersion(version: FileVersion): void {
+    const file = this.versionsFor();
+    if (!file) {
+      return;
+    }
+
+    this.service.downloadVersion(file.id, version.versionNumber).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        // Se marca la version en el nombre para no pisar el archivo actual.
+        link.download = `v${version.versionNumber}-${file.originalName}`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.errorKey.set('files.errors.download'),
+    });
+  }
+
+  protected restoreVersion(version: FileVersion): void {
+    const file = this.versionsFor();
+    if (!file) {
+      return;
+    }
+
+    this.service.restoreVersion(file.id, version.versionNumber).subscribe({
+      next: () => {
+        this.openVersions(file);
+        this.load();
+      },
+      error: () => this.errorKey.set('files.errors.unexpected'),
     });
   }
 

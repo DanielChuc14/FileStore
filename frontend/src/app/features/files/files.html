@@ -113,6 +113,9 @@
                   <button type="button" (click)="download(file)" class="text-slate-600 hover:underline">
                     {{ 'files.download' | translate }}
                   </button>
+                  <button type="button" (click)="openVersions(file)" class="text-slate-600 hover:underline">
+                    {{ 'files.versions' | translate }}
+                  </button>
                   <button type="button" (click)="pendingDeleteFile.set(file)" class="text-red-600 hover:underline">
                     {{ 'common.delete' | translate }}
                   </button>
@@ -147,6 +150,75 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+<!-- Historial de versiones -->
+@if (versionsFor(); as file) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-1 text-lg font-semibold">{{ 'files.versionsTitle' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-500">{{ file.originalName }}</p>
+
+      @if (isLoadingVersions()) {
+        <p class="py-6 text-center text-sm text-slate-500">{{ 'common.loading' | translate }}</p>
+      } @else {
+        <!-- max-h-96 overflow-y-auto: la lista scrollea sola si hay muchas
+             versiones, en vez de estirar el modal fuera de la pantalla -->
+        <div class="max-h-96 overflow-y-auto rounded-md border border-slate-200">
+          <table class="w-full text-sm">
+            <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+              <tr>
+                <th class="px-3 py-2 font-medium">{{ 'files.versionNumber' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.size' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.modified' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (version of versions(); track version.id) {
+                <tr class="border-b border-slate-100 last:border-0">
+                  <td class="px-3 py-2">
+                    v{{ version.versionNumber }}
+                    @if (version.isCurrent) {
+                      <span class="ml-2 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        {{ 'files.currentVersion' | translate }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-3 py-2 text-slate-600">{{ version.sizeBytes | formatBytes }}</td>
+                  <td class="px-3 py-2 text-slate-600">{{ version.createdAt | date: 'short' }}</td>
+                  <td class="px-3 py-2">
+                    <div class="flex gap-3 text-xs">
+                      <button type="button" (click)="downloadVersion(version)" class="text-slate-600 hover:underline">
+                        {{ 'files.download' | translate }}
+                      </button>
+                      @if (!version.isCurrent) {
+                        <button type="button" (click)="restoreVersion(version)" class="text-slate-600 hover:underline">
+                          {{ 'files.restoreVersion' | translate }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500">{{ 'files.versionsHint' | translate }}</p>
+      }
+
+      <div class="mt-4 flex justify-end">
+        <button
+          type="button"
+          (click)="versionsFor.set(null)"
+          class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        >
+          {{ 'common.close' | translate }}
+        </button>
+      </div>
     </div>
   </div>
 }

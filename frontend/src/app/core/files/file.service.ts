@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Folder, PagedFiles, StoredFile } from './file.models';
+import { FileVersion, TrashItem } from './trash.models';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -83,5 +84,36 @@ export class FileService {
    */
   download(file: StoredFile): Observable<Blob> {
     return this.http.get(`${this.filesUrl}/${file.id}`, { responseType: 'blob' });
+  }
+
+  downloadVersion(fileId: string, versionNumber: number): Observable<Blob> {
+    return this.http.get(`${this.filesUrl}/${fileId}`, {
+      responseType: 'blob',
+      params: new HttpParams().set('version', versionNumber),
+    });
+  }
+
+  listVersions(fileId: string): Observable<FileVersion[]> {
+    return this.http.get<FileVersion[]>(`${this.filesUrl}/${fileId}/versions`);
+  }
+
+  restoreVersion(fileId: string, versionNumber: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.filesUrl}/${fileId}/versions/${versionNumber}/restore`,
+      {},
+    );
+  }
+
+  listTrash(): Observable<TrashItem[]> {
+    return this.http.get<TrashItem[]>(`${environment.apiBaseUrl}/trash`);
+  }
+
+  restoreFromTrash(id: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiBaseUrl}/trash/${id}/restore`, {});
+  }
+
+  /** Irreversible: borra el binario y libera la cuota. */
+  hardDelete(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiBaseUrl}/trash/${id}`);
   }
 }

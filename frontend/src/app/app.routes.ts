@@ -41,7 +41,10 @@ export const routes: Routes = [
         path: 'files',
         loadComponent: () => import('./features/files/files').then((m) => m.Files),
       },
-      { path: 'trash', ...placeholder('nav.trash', 6) },
+      {
+        path: 'trash',
+        loadComponent: () => import('./features/trash/trash').then((m) => m.Trash),
+      },
       { path: 'audit', ...placeholder('nav.audit', 7) },
       { path: 'profile', ...placeholder('nav.profile', 8) },
     ],
