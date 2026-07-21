@@ -1,0 +1,68 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-xl font-semibold">{{ 'dashboard.title' | translate }}</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      {{ 'dashboard.welcome' | translate: { email: user()?.email } }}
+    </p>
+  </div>
+
+  @if (isLoading()) {
+    <p class="text-sm text-slate-500">{{ 'common.loading' | translate }}</p>
+  } @else if (usage(); as u) {
+    <!-- Consumo. Es una barra con ancho porcentual, no una grafica:
+         una sola magnitud sobre un total no necesita libreria. -->
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="font-medium">{{ 'dashboard.storage' | translate }}</h2>
+        <span class="text-sm text-slate-600">
+          {{ u.usedBytes | formatBytes }} / {{ u.quotaBytes | formatBytes }}
+          <span class="ml-1 text-slate-400">({{ u.usedPercentage }}%)</span>
+        </span>
+      </div>
+
+      <div class="h-3 w-full overflow-hidden rounded-full bg-slate-100">
+        <!-- min(100%) evita que la barra se desborde si el consumo superara
+             la cuota por un ajuste manual del super-admin -->
+        <div
+          class="h-full rounded-full transition-all"
+          [class]="usageBarClass()"
+          [style.width.%]="u.usedPercentage > 100 ? 100 : u.usedPercentage"
+        ></div>
+      </div>
+
+      @if (u.usedPercentage >= 80) {
+        <p class="mt-2 text-xs" [class]="u.usedPercentage >= 95 ? 'text-red-600' : 'text-amber-600'">
+          {{ 'dashboard.quotaWarning' | translate }}
+        </p>
+      }
+    </section>
+
+    <!-- Tarjetas de resumen -->
+    <section class="grid gap-4 sm:grid-cols-3">
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'dashboard.files' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ u.filesCount }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'dashboard.inTrash' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ u.trashCount }}</p>
+        <p class="mt-1 text-xs text-slate-400">{{ u.trashBytes | formatBytes }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'dashboard.available' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">
+          {{ (u.quotaBytes - u.usedBytes) | formatBytes }}
+        </p>
+      </div>
+    </section>
+  }
+
+  <section class="rounded-lg border border-slate-200 bg-white p-5">
+    <h2 class="mb-4 font-medium">{{ 'dashboard.activity' | translate }}</h2>
+    <app-line-chart
+      [labels]="chartLabels()"
+      [series]="chartSeries()"
+      [emptyMessage]="'dashboard.noActivity' | translate"
+    />
+  </section>
+</div>

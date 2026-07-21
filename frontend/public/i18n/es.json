@@ -11,6 +11,8 @@
     "audit": "Auditoría",
     "profile": "Perfil",
     "clients": "Clientes",
+    "overview": "Resumen",
+    "settings": "Configuración",
     "logout": "Cerrar sesión"
   },
   "login": {
@@ -28,7 +30,64 @@
   },
   "dashboard": {
     "title": "Panel",
-    "welcome": "Sesión iniciada como {{email}}"
+    "welcome": "Sesión iniciada como {{email}}",
+    "storage": "Almacenamiento",
+    "quotaWarning": "Estás cerca del límite de tu cuota. Vacía la papelera o elimina archivos que no uses.",
+    "files": "Archivos",
+    "inTrash": "En papelera",
+    "available": "Disponible",
+    "activity": "Actividad de los últimos 30 días",
+    "noActivity": "Sin actividad registrada en el período"
+  },
+  "adminStats": {
+    "title": "Resumen del servicio",
+    "subtitle": "Métricas globales de todos los clientes.",
+    "clients": "Clientes activos",
+    "blocked": "{{count}} bloqueado(s)",
+    "diskUsed": "Disco utilizado",
+    "ofAssigned": "de ",
+    "files": "Archivos",
+    "inTrash": "En papelera",
+    "activity": "Actividad de los últimos 30 días",
+    "topClients": "Clientes con mayor consumo",
+    "noClients": "Todavía no hay clientes con consumo"
+  },
+  "audit": {
+    "title": "Auditoría",
+    "subtitle": "Registro de todas las operaciones realizadas en tu cuenta.",
+    "empty": "No hay eventos que coincidan con los filtros",
+    "action": "Acción",
+    "allActions": "Todas las acciones",
+    "from": "Desde",
+    "to": "Hasta",
+    "clear": "Limpiar",
+    "date": "Fecha",
+    "actor": "Origen",
+    "resource": "Recurso",
+    "ip": "IP",
+    "showDetails": "Ver detalle",
+    "hideDetails": "Ocultar",
+    "total": "{{count}} evento(s)",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "settings": {
+    "title": "Configuración del sistema",
+    "subtitle": "Valores por defecto que se aplican a todos los clientes sin override propio.",
+    "defaults": "Valores por defecto",
+    "maxFileSize": "Tamaño máximo por archivo (MB)",
+    "maxFileSizeHint": "Un cliente puede tener su propio límite.",
+    "retention": "Retención en papelera (días)",
+    "retentionHint": "Tras ese plazo, los archivos se purgan solos.",
+    "rateLimit": "Límite de peticiones por minuto",
+    "rateLimitHint": "Se aplica por API Key que no defina el suyo.",
+    "saved": "Cambios guardados",
+    "allowedTypes": "Tipos de archivo permitidos",
+    "allowedTypesHint": "Al deshabilitar una extensión, las subidas con ese tipo se rechazan de inmediato.",
+    "errors": {
+      "load": "No se pudo cargar la configuración",
+      "save": "No se pudieron guardar los cambios"
+    }
   },
   "clients": {
     "title": "Clientes",

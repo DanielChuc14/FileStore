@@ -28,10 +28,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
-        path: 'admin/clients',
+        path: 'admin/overview',
         canActivate: [superAdminGuard],
         loadComponent: () =>
-          import('./features/admin/clients/clients').then((m) => m.Clients),
+          import('./features/admin/overview/overview').then((m) => m.AdminOverview),
+      },
+      {
+        path: 'admin/clients',
+        canActivate: [superAdminGuard],
+        loadComponent: () => import('./features/admin/clients/clients').then((m) => m.Clients),
+      },
+      {
+        path: 'admin/settings',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/admin/settings/settings').then((m) => m.AdminSettings),
       },
       {
         path: 'api-keys',
@@ -45,7 +56,10 @@ export const routes: Routes = [
         path: 'trash',
         loadComponent: () => import('./features/trash/trash').then((m) => m.Trash),
       },
-      { path: 'audit', ...placeholder('nav.audit', 7) },
+      {
+        path: 'audit',
+        loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
+      },
       { path: 'profile', ...placeholder('nav.profile', 8) },
     ],
   },

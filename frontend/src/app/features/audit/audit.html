@@ -1,0 +1,149 @@
+<div class="space-y-4">
+  <div>
+    <h1 class="text-xl font-semibold">{{ 'audit.title' | translate }}</h1>
+    <p class="mt-1 text-sm text-slate-500">{{ 'audit.subtitle' | translate }}</p>
+  </div>
+
+  <!-- Filtros -->
+  <form [formGroup]="filterForm" (ngSubmit)="applyFilters()" class="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+    <div>
+      <label class="mb-1 block text-xs font-medium text-slate-600">
+        {{ 'audit.action' | translate }}
+      </label>
+      <select
+        formControlName="action"
+        class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+      >
+        <option value="">{{ 'audit.allActions' | translate }}</option>
+        @for (action of actions; track action) {
+          <option [value]="action">{{ action }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-medium text-slate-600">
+        {{ 'audit.from' | translate }}
+      </label>
+      <input
+        type="date"
+        formControlName="from"
+        class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+      />
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-medium text-slate-600">
+        {{ 'audit.to' | translate }}
+      </label>
+      <input
+        type="date"
+        formControlName="to"
+        class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+      />
+    </div>
+
+    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+      {{ 'common.search' | translate }}
+    </button>
+    <button type="button" (click)="clearFilters()" class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+      {{ 'audit.clear' | translate }}
+    </button>
+  </form>
+
+  <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">{{ 'audit.date' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'audit.action' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'audit.actor' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'audit.resource' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'audit.ip' | translate }}</th>
+          <th class="px-4 py-3 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoading()) {
+          <tr>
+            <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+              {{ 'common.loading' | translate }}
+            </td>
+          </tr>
+        } @else if (entries().length === 0) {
+          <tr>
+            <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+              {{ 'audit.empty' | translate }}
+            </td>
+          </tr>
+        } @else {
+          @for (entry of entries(); track entry.id) {
+            <tr class="border-b border-slate-100">
+              <td class="px-4 py-3 whitespace-nowrap text-slate-600">
+                {{ entry.createdAt | date: 'short' }}
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                  {{ entry.action }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-slate-600">{{ entry.actorType }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ entry.resourceType ?? '—' }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ entry.ipAddress ?? '—' }}</td>
+              <td class="px-4 py-3">
+                @if (entry.metadataJson) {
+                  <button
+                    type="button"
+                    (click)="toggleDetails(entry.id)"
+                    class="-my-1 rounded px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:underline"
+                  >
+                    {{ (expanded() === entry.id ? 'audit.hideDetails' : 'audit.showDetails') | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+
+            @if (expanded() === entry.id) {
+              <tr class="border-b border-slate-100 bg-slate-50">
+                <td colspan="6" class="px-4 py-3">
+                  <!-- pre + overflow-x-auto: el JSON scrollea solo si es ancho,
+                       en vez de estirar la tabla -->
+                  <pre class="overflow-x-auto rounded bg-white p-3 font-mono text-xs text-slate-700">{{ formatMetadata(entry.metadataJson) }}</pre>
+                </td>
+              </tr>
+            }
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginacion -->
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <p class="text-xs text-slate-500">
+      {{ 'audit.total' | translate: { count: totalCount() } }}
+    </p>
+
+    @if (totalPages() > 1) {
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="goToPage(page() - 1)"
+          [disabled]="page() === 1"
+          class="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+        >
+          {{ 'audit.previous' | translate }}
+        </button>
+        <span class="text-sm text-slate-600">{{ page() }} / {{ totalPages() }}</span>
+        <button
+          type="button"
+          (click)="goToPage(page() + 1)"
+          [disabled]="page() === totalPages()"
+          class="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+        >
+          {{ 'audit.next' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</div>
