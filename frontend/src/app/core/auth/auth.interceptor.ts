@@ -31,9 +31,15 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const token = auth.getAccessToken();
   const authorized = token ? withToken(request, token) : request;
 
+  // Endpoints donde un 401 significa "credenciales incorrectas", no "sesion
+  // vencida": el cambio de contraseña valida la contraseña ACTUAL, y si es
+  // erronea responde 401. Sin esto, el interceptor intentaria refrescar, la
+  // peticion volveria a dar 401 y terminaria deslogueando al usuario.
+  const isCredentialCheck = request.url.includes('/change-password');
+
   return next(authorized).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status !== 401 || !token) {
+      if (error.status !== 401 || !token || isCredentialCheck) {
         return throwError(() => error);
       }
 

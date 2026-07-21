@@ -246,8 +246,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // Solo se fuerza HTTPS fuera de desarrollo. En dev, el redirect 307 del
+    // puerto http al https rompe Swagger UI: sus peticiones saltan al puerto
+    // con el certificado autofirmado y el navegador las corta como error de
+    // red. El panel Angular ya usa https via su proxy, asi que no lo necesita.
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
 app.UseCors(AngularDevCorsPolicy);
 
 app.UseAuthentication();
