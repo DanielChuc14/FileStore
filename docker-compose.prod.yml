@@ -1,0 +1,70 @@
+# Stack de produccion para un VPS. Levanta la base, la API y el frontend/Nginx.
+# Los secretos vienen del archivo .env (copiar de .env.production.example).
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Ver DEPLOYMENT.md para el checklist completo.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Sin 'ports': la base no se expone al host. Solo la alcanzan los otros
+    # contenedores por la red interna del compose.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: FileStore
+      Jwt__Audience: FileStore
+      Storage__BasePath: /storage
+      Database__ApplyMigrationsOnStartup: ${APPLY_MIGRATIONS:-false}
+      SuperAdmin__Email: ${SUPERADMIN_EMAIL}
+      SuperAdmin__Password: ${SUPERADMIN_PASSWORD}
+      SuperAdmin__Name: ${SUPERADMIN_NAME:-Super Admin}
+      # Origen del panel, para CORS. Debe ser el dominio publico con https.
+      Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN}
+    volumes:
+      - storage-data:/storage
+    # Tampoco se expone al host: solo el frontend/Nginx lo alcanza.
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certificados de Let's Encrypt del host (ver DEPLOYMENT.md).
+      - ${CERTS_PATH}:/etc/nginx/certs:ro
+      # Webroot para el challenge de renovacion de certbot.
+      - certbot-webroot:/var/www/certbot
+
+volumes:
+  postgres-data:
+  storage-data:
+  certbot-webroot:

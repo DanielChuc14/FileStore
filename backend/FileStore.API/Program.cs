@@ -11,7 +11,9 @@ using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 // Microsoft.OpenApi 2.x (el que trae Swashbuckle 10) aplano el namespace:
@@ -219,14 +221,45 @@ builder.Services
 
 var app = builder.Build();
 
-// Seed idempotente del super-admin. Las migraciones NO se aplican aqui a
-// proposito: `Database.Migrate()` en el arranque significa que un deploy puede
-// alterar el esquema sin que nadie lo haya decidido. Se aplican con
-// `dotnet ef database update` como paso explicito.
 await using (var scope = app.Services.CreateAsyncScope())
 {
+    // Migracion opcional al arrancar. Por defecto NO corre: aplicar migraciones
+    // en cada arranque significa que un deploy puede alterar el esquema sin que
+    // nadie lo haya decidido. En un VPS de un solo operador se puede activar con
+    // Database__ApplyMigrationsOnStartup=true para simplificar el primer deploy;
+    // en un entorno con varios nodos conviene dejarlo apagado y migrar como paso
+    // explicito para que no corran dos migraciones a la vez.
+    if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+    {
+        var context = scope.ServiceProvider.GetRequiredService<FileStoreDbContext>();
+        await context.Database.MigrateAsync();
+    }
+
+    // Seed idempotente del super-admin.
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
+}
+
+// En produccion la API corre detras de Nginx, que termina el TLS y le reenvia
+// HTTP. Sin esto, la app veria el esquema http y la IP del contenedor Nginx: el
+// redirect a HTTPS entraria en loop y el audit log registraria la IP del proxy
+// en vez de la del cliente real. ForwardedHeaders lee X-Forwarded-Proto y
+// X-Forwarded-For para recuperar el esquema y la IP originales. Va PRIMERO, antes
+// de cualquier middleware que dependa de ellos.
+if (!app.Environment.IsDevelopment())
+{
+    var forwardedOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    };
+
+    // El proxy es otro contenedor de la red de Docker, con IP dinamica. Se
+    // vacian las listas de proxies conocidos para confiar en el unico salto que
+    // hay dentro de la red privada del compose.
+    forwardedOptions.KnownNetworks.Clear();
+    forwardedOptions.KnownProxies.Clear();
+
+    app.UseForwardedHeaders(forwardedOptions);
 }
 
 // Serilog va PRIMERO para que quede por fuera del manejador de excepciones y
