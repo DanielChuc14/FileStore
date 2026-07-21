@@ -36,7 +36,7 @@ export class Login {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: (user) => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        const fallback = user.role === 'SuperAdmin' ? '/admin/clients' : '/dashboard';
+        const fallback = user.role === 'SuperAdmin' ? '/admin/overview' : '/dashboard';
         void this.router.navigateByUrl(returnUrl ?? fallback);
       },
       error: (error: { status?: number }) => {

@@ -82,11 +82,14 @@
     "rateLimit": "Límite de peticiones por minuto",
     "rateLimitHint": "Se aplica por API Key que no defina el suyo.",
     "saved": "Cambios guardados",
+    "applied": "Aplicado",
     "allowedTypes": "Tipos de archivo permitidos",
-    "allowedTypesHint": "Al deshabilitar una extensión, las subidas con ese tipo se rechazan de inmediato.",
+    "allowedTypesHint": "Los cambios se aplican al instante, sin necesidad de guardar. Al deshabilitar una extensión, las subidas con ese tipo se rechazan de inmediato.",
     "errors": {
       "load": "No se pudo cargar la configuración",
-      "save": "No se pudieron guardar los cambios"
+      "save": "No se pudieron guardar los cambios",
+      "retentionRange": "Debe estar entre 1 y 365 días",
+      "invalidForm": "Revisa los valores marcados en rojo"
     }
   },
   "clients": {

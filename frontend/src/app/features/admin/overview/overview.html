@@ -55,8 +55,13 @@
         <div class="space-y-3">
           @for (client of s.topClients; track client.id) {
             <div>
-              <div class="mb-1 flex items-baseline justify-between gap-2 text-sm">
-                <span class="truncate font-medium">{{ client.name }}</span>
+              <div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                <!-- Se muestra tambien el email: el nombre puede repetirse entre
+                     clientes distintos y solo con el no se distinguen. -->
+                <span class="min-w-0 flex-1 truncate">
+                  <span class="font-medium">{{ client.name }}</span>
+                  <span class="ml-2 text-xs text-slate-400">{{ client.email }}</span>
+                </span>
                 <span class="shrink-0 text-slate-500">
                   {{ client.usedBytes | formatBytes }} / {{ client.quotaBytes | formatBytes }}
                 </span>

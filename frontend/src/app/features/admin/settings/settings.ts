@@ -20,6 +20,12 @@ export class AdminSettings implements OnInit {
   protected readonly savedMessage = signal(false);
   protected readonly errorKey = signal<string | null>(null);
 
+  /**
+   * Extension recien conmutada. Las casillas se guardan solas, y sin una señal
+   * visible no hay forma de saber si el cambio se aplico o solo se marco.
+   */
+  protected readonly justToggled = signal<string | null>(null);
+
   // El tamaño se edita en MB aunque la API trabaje en bytes: nadie razona
   // en bytes al configurar un limite.
   protected readonly configForm = this.fb.nonNullable.group({
@@ -87,13 +93,29 @@ export class AdminSettings implements OnInit {
   }
 
   protected toggleType(type: AllowedType): void {
+    this.errorKey.set(null);
+
     this.service.updateAllowedType(type.id, !type.isEnabled).subscribe({
       next: (updated) => {
         this.types.update((list) =>
           list.map((t) => (t.id === updated.id ? updated : t)),
         );
+
+        this.justToggled.set(updated.id);
+        setTimeout(() => {
+          // Solo se limpia si sigue siendo el mismo: si el admin conmuto otra
+          // casilla mientras tanto, ese aviso no debe borrarse.
+          if (this.justToggled() === updated.id) {
+            this.justToggled.set(null);
+          }
+        }, 2000);
       },
-      error: () => this.errorKey.set('settings.errors.save'),
+      error: () => {
+        // La casilla ya se veia cambiada por el navegador: se recarga la lista
+        // para que refleje el estado real del servidor.
+        this.loadTypes();
+        this.errorKey.set('settings.errors.save');
+      },
     });
   }
 }

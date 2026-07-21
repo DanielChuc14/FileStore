@@ -40,9 +40,22 @@
               formControlName="trashRetentionDays"
               min="1"
               max="365"
-              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+              class="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+              [class]="
+                configForm.controls.trashRetentionDays.touched &&
+                configForm.controls.trashRetentionDays.invalid
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                  : 'border-slate-300 focus:border-slate-500 focus:ring-slate-200'
+              "
             />
-            <p class="mt-1 text-xs text-slate-500">{{ 'settings.retentionHint' | translate }}</p>
+            @if (
+              configForm.controls.trashRetentionDays.touched &&
+              configForm.controls.trashRetentionDays.invalid
+            ) {
+              <p class="mt-1 text-xs text-red-600">{{ 'settings.errors.retentionRange' | translate }}</p>
+            } @else {
+              <p class="mt-1 text-xs text-slate-500">{{ 'settings.retentionHint' | translate }}</p>
+            }
           </div>
 
           <div>
@@ -71,6 +84,10 @@
           @if (savedMessage()) {
             <span class="text-sm text-green-700">{{ 'settings.saved' | translate }}</span>
           }
+
+          @if (configForm.touched && configForm.invalid) {
+            <span class="text-sm text-red-600">{{ 'settings.errors.invalidForm' | translate }}</span>
+          }
         </div>
       </form>
     </section>
@@ -87,12 +104,21 @@
               type="checkbox"
               [checked]="type.isEnabled"
               (change)="toggleType(type)"
-              class="size-4 rounded border-slate-300"
+              class="size-4 shrink-0 rounded border-slate-300"
             />
-            <span class="flex-1">
+            <!-- min-w-0 es imprescindible: sin el, un hijo flex no baja de su
+                 ancho de contenido y truncate no tiene efecto. El MIME de docx
+                 mide 71 caracteres y se desbordaba sobre la celda vecina. -->
+            <span class="flex min-w-0 flex-1 flex-col">
               <span class="font-mono text-sm font-medium">.{{ type.extension }}</span>
-              <span class="ml-2 truncate text-xs text-slate-400">{{ type.mimeType }}</span>
+              <span class="truncate text-xs text-slate-400" [title]="type.mimeType">
+                {{ type.mimeType }}
+              </span>
             </span>
+
+            @if (justToggled() === type.id) {
+              <span class="shrink-0 text-xs text-green-700">{{ 'settings.applied' | translate }}</span>
+            }
           </label>
         }
       </div>

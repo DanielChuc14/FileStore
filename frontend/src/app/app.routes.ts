@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, guestGuard, superAdminGuard } from './core/auth/auth.guards';
+import { authGuard, clientGuard, guestGuard, superAdminGuard } from './core/auth/auth.guards';
 
 /**
  * `withComponentInputBinding` en app.config hace que estos `data` lleguen al
@@ -25,6 +25,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
+        canActivate: [clientGuard],
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
@@ -46,21 +47,25 @@ export const routes: Routes = [
       },
       {
         path: 'api-keys',
+        canActivate: [clientGuard],
         loadComponent: () => import('./features/api-keys/api-keys').then((m) => m.ApiKeys),
       },
       {
         path: 'files',
+        canActivate: [clientGuard],
         loadComponent: () => import('./features/files/files').then((m) => m.Files),
       },
       {
         path: 'trash',
+        canActivate: [clientGuard],
         loadComponent: () => import('./features/trash/trash').then((m) => m.Trash),
       },
       {
         path: 'audit',
+        canActivate: [clientGuard],
         loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
       },
-      { path: 'profile', ...placeholder('nav.profile', 8) },
+      { path: 'profile', canActivate: [clientGuard], ...placeholder('nav.profile', 8) },
     ],
   },
   { path: '**', redirectTo: '' },

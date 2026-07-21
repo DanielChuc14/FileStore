@@ -17,6 +17,23 @@ export const authGuard: CanActivateFn = (_route, state) => {
   });
 };
 
+/**
+ * Rutas de contenido del cliente. El super-admin no es dueño de archivos, y la
+ * API le responde 403: sin este guard veria la vista renderizada y rota en vez
+ * de una redireccion limpia.
+ */
+export const clientGuard: CanActivateFn = (route, state) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  const authenticated = authGuard(route, state);
+  if (authenticated !== true) {
+    return authenticated;
+  }
+
+  return auth.isSuperAdmin() ? router.createUrlTree(['/admin/overview']) : true;
+};
+
 export const superAdminGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
