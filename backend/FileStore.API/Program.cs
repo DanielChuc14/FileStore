@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using FileStore.API.Infrastructure;
 using FileStore.Application;
 using FileStore.Application.Abstractions;
@@ -9,6 +11,8 @@ using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -96,6 +100,61 @@ builder.Services.AddAuthorizationBuilder()
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthSchemes.ApiKey)
         .RequireClaim(AuthClaims.ClientId));
 
+// Rate limiting por API Key. Se usa el limitador incorporado de .NET en vez de
+// uno propio: ya resuelve la ventana, la concurrencia y el rechazo.
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var apiKeyId = context.User.FindFirstValue(AuthClaims.ApiKeyId);
+
+        // Sin API Key no hay limite: el panel se autentica con JWT y su uso lo
+        // controla la sesion, no una cuota de peticiones.
+        if (string.IsNullOrEmpty(apiKeyId))
+        {
+            return RateLimitPartition.GetNoLimiter("no-api-key");
+        }
+
+        var limit = int.TryParse(context.User.FindFirstValue(AuthClaims.RateLimit), out var parsed)
+            ? parsed
+            : 100;
+
+        // Una particion por key: agotar una no afecta a las demas, ni siquiera
+        // a las del mismo cliente.
+        return RateLimitPartition.GetFixedWindowLimiter(apiKeyId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = limit,
+            Window = TimeSpan.FromMinutes(1),
+
+            // Sin cola: si se supera el limite se rechaza de inmediato. Encolar
+            // haria que el cliente espere sin saber por que.
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        // Retry-After le dice al cliente cuanto esperar en vez de que reintente
+        // a ciegas.
+        var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var value)
+            ? (int)value.TotalSeconds
+            : 60;
+
+        context.HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Status = StatusCodes.Status429TooManyRequests,
+            Title = "Se supero el limite de peticiones por minuto.",
+            Detail = $"Reintenta en {retryAfter} segundos.",
+            Instance = context.HttpContext.Request.Path
+        }, cancellationToken);
+    };
+});
+
 builder.Services.AddCors(options =>
     options.AddPolicy(AngularDevCorsPolicy, policy => policy
         .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
@@ -142,6 +201,12 @@ app.UseCors(AngularDevCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Va DESPUES de la autorizacion, no solo de la autenticacion. UseAuthentication
+// resuelve unicamente el esquema por defecto (JWT); el de API Key lo resuelve
+// la autorizacion al evaluar la politica que lo declara. Colocado antes, el
+// limitador no veria el claim de la key y no aplicaria ningun limite.
+app.UseRateLimiter();
 
 app.MapControllers();
 

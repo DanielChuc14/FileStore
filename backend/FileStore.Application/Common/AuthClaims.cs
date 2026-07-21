@@ -15,6 +15,13 @@ public static class AuthClaims
 
     /// <summary>API Key que autentico el request. Ausente cuando se entra por JWT.</summary>
     public const string ApiKeyId = "api_key_id";
+
+    /// <summary>
+    /// Limite por minuto ya resuelto (override de la key o default global). Se
+    /// emite como claim porque el limitador de peticiones necesita leerlo de
+    /// forma sincrona, y consultarlo a la base en cada request no es viable.
+    /// </summary>
+    public const string RateLimit = "rate_limit";
 }
 
 public static class AuthPolicies

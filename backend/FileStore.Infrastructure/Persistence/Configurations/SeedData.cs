@@ -1,3 +1,4 @@
+using FileStore.Application.Common;
 using FileStore.Domain.Entities;
 
 namespace FileStore.Infrastructure.Persistence.Configurations;
@@ -43,11 +44,4 @@ internal static class SeedData
         UpdatedByAdminId = null,
         UpdatedAt = SeededAt
     };
-}
-
-public static class AppConfigKeys
-{
-    public const string MaxFileSizeBytes = "MaxFileSizeBytes";
-    public const string TrashRetentionDays = "TrashRetentionDays";
-    public const string RateLimitDefaultPerMinute = "RateLimitDefaultPerMinute";
 }

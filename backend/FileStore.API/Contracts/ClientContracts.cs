@@ -25,3 +25,10 @@ public record UpdateApiKeyRequest(
     string? Name,
     int? RateLimitPerMinute,
     bool ClearRateLimitOverride = false);
+
+public record UpdateConfigRequest(
+    long? MaxFileSizeBytes,
+    int? TrashRetentionDays,
+    int? RateLimitDefaultPerMinute);
+
+public record UpdateAllowedTypeRequest(bool IsEnabled);

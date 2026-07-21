@@ -1,5 +1,5 @@
 using FileStore.Application.Abstractions;
-using FileStore.Infrastructure.Persistence.Configurations;
+using FileStore.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 

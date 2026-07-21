@@ -19,6 +19,7 @@ public class ApiKeyAuthenticationHandler(
     UrlEncoder encoder,
     IApplicationDbContext context,
     IApiKeyGenerator generator,
+    IAppConfigReader appConfig,
     IMemoryCache cache)
     : AuthenticationHandler<ApiKeyAuthenticationOptions>(options, logger, encoder)
 {
@@ -56,6 +57,7 @@ public class ApiKeyAuthenticationHandler(
                 k.IsActive,
                 k.RevokedAt,
                 k.LastUsedAt,
+                k.RateLimitPerMinute,
                 ClientIsActive = k.Client.IsActive,
                 ClientIsDeleted = k.Client.IsDeleted,
                 ClientName = k.Client.Name
@@ -93,11 +95,17 @@ public class ApiKeyAuthenticationHandler(
 
         await TouchLastUsedAsync(record.Id, record.LastUsedAt);
 
+        // El limite se resuelve aca (override de la key o default global) para
+        // que el limitador no tenga que consultar la base en cada peticion.
+        var rateLimit = record.RateLimitPerMinute
+            ?? await appConfig.GetRateLimitDefaultPerMinuteAsync();
+
         var identity = new ClaimsIdentity(
             [
                 new Claim(AuthClaims.UserId, record.ClientId.ToString()),
                 new Claim(AuthClaims.ClientId, record.ClientId.ToString()),
                 new Claim(AuthClaims.ApiKeyId, record.Id.ToString()),
+                new Claim(AuthClaims.RateLimit, rateLimit.ToString()),
                 new Claim(ClaimTypes.Name, record.ClientName)
             ],
             AuthSchemes.ApiKey);
