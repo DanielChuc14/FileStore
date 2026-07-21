@@ -37,7 +37,7 @@ public class UpdateApiKeyCommandHandler(
         UpdateApiKeyCommand request,
         CancellationToken cancellationToken)
     {
-        var clientId = currentUser.UserId ?? throw new InvalidCredentialsException();
+        var clientId = currentUser.ClientId ?? throw new InvalidCredentialsException();
 
         // El ClientId va en el WHERE y no en un chequeo posterior: pedir la key
         // de otro cliente devuelve 404, sin confirmar siquiera que existe.

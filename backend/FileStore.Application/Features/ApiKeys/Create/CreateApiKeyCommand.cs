@@ -35,7 +35,7 @@ public class CreateApiKeyCommandHandler(
     {
         // El ClientId sale del token, nunca del request: un cliente no puede
         // crear keys para otro aunque manipule el body.
-        var clientId = currentUser.UserId
+        var clientId = currentUser.ClientId
             ?? throw new InvalidCredentialsException();
 
         var generated = generator.Generate();

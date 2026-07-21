@@ -17,7 +17,7 @@ public class GetApiKeysQueryHandler(
         GetApiKeysQuery request,
         CancellationToken cancellationToken)
     {
-        var clientId = currentUser.UserId ?? throw new InvalidCredentialsException();
+        var clientId = currentUser.ClientId ?? throw new InvalidCredentialsException();
 
         // El filtro por ClientId es lo que garantiza el aislamiento: sin el, un
         // cliente veria las keys de todos.

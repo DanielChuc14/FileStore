@@ -27,7 +27,7 @@ public class RotateApiKeyCommandHandler(
         RotateApiKeyCommand request,
         CancellationToken cancellationToken)
     {
-        var clientId = currentUser.UserId ?? throw new InvalidCredentialsException();
+        var clientId = currentUser.ClientId ?? throw new InvalidCredentialsException();
 
         var existing = await context.ApiKeys
             .FirstOrDefaultAsync(k => k.Id == request.Id && k.ClientId == clientId, cancellationToken)

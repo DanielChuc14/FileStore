@@ -12,3 +12,5 @@ public record AuthResponse(
     Guid UserId,
     string Email,
     string Role);
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

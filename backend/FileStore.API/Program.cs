@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+// Microsoft.OpenApi 2.x (el que trae Swashbuckle 10) aplano el namespace:
+// los tipos que antes vivian en Microsoft.OpenApi.Models estan ahora en la raiz.
+using Microsoft.OpenApi;
 using Serilog;
 
 const string AngularDevCorsPolicy = "AngularDev";
@@ -28,7 +31,50 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FileStore API",
+        Version = "v1",
+        Description =
+            "Servicio de gestion de archivos multi-cliente.\n\n" +
+            "Dos canales de autenticacion:\n" +
+            "- **JWT** para el panel (`/auth`, `/me`, `/admin`).\n" +
+            "- **API Key** en el header `X-Api-Key` para integraciones.\n\n" +
+            "Los endpoints de contenido (`/files`, `/folders`, `/trash`) aceptan ambos."
+    });
+
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Access token obtenido de POST /auth/login. Pegar solo el token."
+    });
+
+    options.AddSecurityDefinition(AuthSchemes.ApiKey, new OpenApiSecurityScheme
+    {
+        Name = AuthSchemes.ApiKeyHeader,
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "API Key completa, con el formato fs_live_XXXXXXXX.SECRETO"
+    });
+
+    // Sin esto, Swagger UI muestra los candados pero no adjunta las credenciales
+    // al ejecutar, y todo responde 401.
+    // En OpenApi 2.x las referencias dejaron de expresarse con la propiedad
+    // Reference y pasaron a tener su propio tipo.
+    // Swashbuckle 10 recibe una funcion sobre el documento, no el requisito ya
+    // construido: la referencia necesita resolverse contra el documento final.
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document)] = [],
+        [new OpenApiSecuritySchemeReference(AuthSchemes.ApiKey, document)] = []
+    });
+});
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -189,6 +235,11 @@ await using (var scope = app.Services.CreateAsyncScope())
 // que el handler reescriba la respuesta.
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
+
+// El 401 y el 403 los emite el middleware de autenticacion, no el manejador de
+// excepciones, y por defecto salen con el cuerpo vacio. Combinado con
+// AddProblemDetails, esto les da el mismo formato que al resto de los errores.
+app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {

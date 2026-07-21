@@ -17,7 +17,7 @@ public class RevokeApiKeyCommandHandler(
 {
     public async Task Handle(RevokeApiKeyCommand request, CancellationToken cancellationToken)
     {
-        var clientId = currentUser.UserId ?? throw new InvalidCredentialsException();
+        var clientId = currentUser.ClientId ?? throw new InvalidCredentialsException();
 
         var apiKey = await context.ApiKeys
             .FirstOrDefaultAsync(k => k.Id == request.Id && k.ClientId == clientId, cancellationToken)
