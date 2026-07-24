@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddHostedService<TrashPurgeService>();
 
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<DemoDataSeeder>();
 
         return services;
     }

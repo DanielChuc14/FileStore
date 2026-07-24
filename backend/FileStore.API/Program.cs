@@ -273,6 +273,10 @@ await using (var scope = app.Services.CreateAsyncScope())
     // Seed idempotente del super-admin.
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
+
+    // Datos de demostracion, solo si Seed:Demo=true y la base no tiene clientes.
+    var demoSeeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
+    await demoSeeder.SeedAsync();
 }
 
 // En produccion la API corre detras de Nginx, que termina el TLS y le reenvia
