@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileStore.IntegrationTests/FileStore.IntegrationTests.csproj" />
+    <Project Path="tests/FileStore.UnitTests/FileStore.UnitTests.csproj" />
+  </Folder>
+  <Project Path="FileStore.API/FileStore.API.csproj" />
+  <Project Path="FileStore.Application/FileStore.Application.csproj" />
+  <Project Path="FileStore.Domain/FileStore.Domain.csproj" />
+  <Project Path="FileStore.Infrastructure/FileStore.Infrastructure.csproj" />
+</Solution>

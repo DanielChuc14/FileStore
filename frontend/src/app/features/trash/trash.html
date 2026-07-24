@@ -1,0 +1,100 @@
+<div class="space-y-4">
+  <div>
+    <h1 class="text-xl font-semibold">{{ 'trash.title' | translate }}</h1>
+    <p class="mt-1 text-sm text-slate-500">{{ 'trash.subtitle' | translate }}</p>
+  </div>
+
+  @if (errorKey(); as key) {
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+      {{ key | translate }}
+    </div>
+  }
+
+  <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.name' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.size' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'trash.deletedAt' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'trash.purgeAt' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoading()) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'common.loading' | translate }}
+            </td>
+          </tr>
+        } @else if (items().length === 0) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'trash.empty' | translate }}
+            </td>
+          </tr>
+        } @else {
+          @for (item of items(); track item.id) {
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="px-4 py-3">{{ item.originalName }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ item.sizeBytes | formatBytes }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ item.deletedAt | date: 'short' }}</td>
+              <td class="px-4 py-3">
+                <!-- Menos de 3 dias se resalta en ambar: es el aviso de que se
+                     pierde pronto -->
+                <span
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                  [class]="
+                    item.daysUntilPurge <= 3
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-100 text-slate-600'
+                  "
+                >
+                  {{ purgeLabelKey(item.daysUntilPurge) | translate: { days: item.daysUntilPurge } }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <!-- -my-1 py-1 px-2 -mx-2: agranda el area clicable sin mover el
+                     layout. Un enlace de texto suelto es un blanco muy chico. -->
+                <div class="-my-1 flex gap-1 text-xs">
+                  <button type="button" (click)="restore(item)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
+                    {{ 'trash.restore' | translate }}
+                  </button>
+                  <button type="button" (click)="pendingPurge.set(item)" class="rounded px-2 py-1 text-red-600 hover:bg-red-50 hover:underline">
+                    {{ 'trash.purgeNow' | translate }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Borrado irreversible -->
+@if (pendingPurge(); as item) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-2 text-lg font-semibold">{{ 'trash.purgeTitle' | translate }}</h2>
+      <p class="mb-2 text-sm text-slate-600">
+        {{ 'trash.purgeWarning' | translate: { name: item.originalName } }}
+      </p>
+      <ul class="mb-4 list-disc space-y-1 pl-5 text-sm text-slate-600">
+        <li>{{ 'trash.purgeEffects.versions' | translate }}</li>
+        <li>{{ 'trash.purgeEffects.quota' | translate }}</li>
+        <li>{{ 'trash.purgeEffects.irreversible' | translate }}</li>
+      </ul>
+      <div class="flex justify-end gap-2">
+        <button type="button" (click)="pendingPurge.set(null)" class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" (click)="confirmPurge()" class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+          {{ 'trash.purgeConfirm' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

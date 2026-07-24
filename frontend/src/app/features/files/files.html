@@ -1,0 +1,264 @@
+<div class="space-y-4">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold">{{ 'files.title' | translate }}</h1>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="showFolderModal.set(true)"
+        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      >
+        {{ 'files.newFolder' | translate }}
+      </button>
+
+      <!-- El input file real se oculta y se dispara desde el label, que si se
+           puede estilar. Un <input type="file"> nativo no admite estilos. -->
+      <label
+        class="cursor-pointer rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        [class.opacity-50]="isUploading()"
+      >
+        {{ (isUploading() ? 'files.uploading' : 'files.upload') | translate }}
+        <input type="file" class="hidden" (change)="onFileSelected($event)" [disabled]="isUploading()" />
+      </label>
+    </div>
+  </div>
+
+  <!-- Migas de pan -->
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-slate-600">
+    @for (crumb of breadcrumbs(); track $index; let last = $last) {
+      @if (last) {
+        <span class="font-medium text-slate-900">
+          {{ crumb.id === null ? ('files.root' | translate) : crumb.name }}
+        </span>
+      } @else {
+        <button type="button" (click)="navigateTo($index)" class="hover:underline">
+          {{ crumb.id === null ? ('files.root' | translate) : crumb.name }}
+        </button>
+        <span class="text-slate-400">/</span>
+      }
+    }
+  </nav>
+
+  @if (errorKey(); as key) {
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+      {{ key | translate }}
+    </div>
+  }
+
+  <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <table class="w-full text-sm">
+      <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.name' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.size' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.versions' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.modified' | translate }}</th>
+          <th class="px-4 py-3 font-medium">{{ 'files.columns.actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoading()) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'common.loading' | translate }}
+            </td>
+          </tr>
+        } @else if (folders().length === 0 && files().length === 0) {
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+              {{ 'files.empty' | translate }}
+            </td>
+          </tr>
+        } @else {
+          @for (folder of folders(); track folder.id) {
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="px-4 py-3">
+                <button
+                  type="button"
+                  (click)="openFolder(folder)"
+                  class="flex items-center gap-2 font-medium text-slate-900 hover:underline"
+                >
+                  <span aria-hidden="true">📁</span>
+                  {{ folder.name }}
+                </button>
+              </td>
+              <td class="px-4 py-3 text-slate-400">—</td>
+              <td class="px-4 py-3 text-slate-400">—</td>
+              <td class="px-4 py-3 text-slate-600">{{ folder.createdAt | date: 'short' }}</td>
+              <td class="px-4 py-3">
+                <button
+                  type="button"
+                  (click)="pendingDeleteFolder.set(folder)"
+                  class="-my-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:underline"
+                >
+                  {{ 'common.delete' | translate }}
+                </button>
+              </td>
+            </tr>
+          }
+
+          @for (file of files(); track file.id) {
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="px-4 py-3">
+                <span class="flex items-center gap-2">
+                  <span aria-hidden="true">📄</span>
+                  {{ file.originalName }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-slate-600">{{ file.sizeBytes | formatBytes }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ file.versionCount }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ file.updatedAt | date: 'short' }}</td>
+              <td class="px-4 py-3">
+                <div class="-my-1 flex gap-1 text-xs">
+                  <button type="button" (click)="download(file)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
+                    {{ 'files.download' | translate }}
+                  </button>
+                  <button type="button" (click)="openVersions(file)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
+                    {{ 'files.versions' | translate }}
+                  </button>
+                  <button type="button" (click)="pendingDeleteFile.set(file)" class="rounded px-2 py-1 text-red-600 hover:bg-red-50 hover:underline">
+                    {{ 'common.delete' | translate }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Nueva carpeta -->
+@if (showFolderModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-4 text-lg font-semibold">{{ 'files.newFolder' | translate }}</h2>
+      <form [formGroup]="folderForm" (ngSubmit)="createFolder()" class="space-y-4">
+        <input
+          type="text"
+          formControlName="name"
+          [placeholder]="'files.folderNamePlaceholder' | translate"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+        />
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="showFolderModal.set(false)" class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Historial de versiones -->
+@if (versionsFor(); as file) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-1 text-lg font-semibold">{{ 'files.versionsTitle' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-500">{{ file.originalName }}</p>
+
+      @if (isLoadingVersions()) {
+        <p class="py-6 text-center text-sm text-slate-500">{{ 'common.loading' | translate }}</p>
+      } @else {
+        <!-- max-h-96 overflow-y-auto: la lista scrollea sola si hay muchas
+             versiones, en vez de estirar el modal fuera de la pantalla -->
+        <div class="max-h-96 overflow-y-auto rounded-md border border-slate-200">
+          <table class="w-full text-sm">
+            <thead class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+              <tr>
+                <th class="px-3 py-2 font-medium">{{ 'files.versionNumber' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.size' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.modified' | translate }}</th>
+                <th class="px-3 py-2 font-medium">{{ 'files.columns.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (version of versions(); track version.id) {
+                <tr class="border-b border-slate-100 last:border-0">
+                  <td class="px-3 py-2">
+                    v{{ version.versionNumber }}
+                    @if (version.isCurrent) {
+                      <span class="ml-2 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        {{ 'files.currentVersion' | translate }}
+                      </span>
+                    }
+                  </td>
+                  <td class="px-3 py-2 text-slate-600">{{ version.sizeBytes | formatBytes }}</td>
+                  <td class="px-3 py-2 text-slate-600">{{ version.createdAt | date: 'short' }}</td>
+                  <td class="px-3 py-2">
+                    <div class="-my-1 flex gap-1 text-xs">
+                      <button type="button" (click)="downloadVersion(version)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
+                        {{ 'files.download' | translate }}
+                      </button>
+                      @if (!version.isCurrent) {
+                        <button type="button" (click)="restoreVersion(version)" class="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 hover:underline">
+                          {{ 'files.restoreVersion' | translate }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500">{{ 'files.versionsHint' | translate }}</p>
+      }
+
+      <div class="mt-4 flex justify-end">
+        <button
+          type="button"
+          (click)="versionsFor.set(null)"
+          class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        >
+          {{ 'common.close' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Borrar archivo -->
+@if (pendingDeleteFile(); as file) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-2 text-lg font-semibold">{{ 'files.deleteFileTitle' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-600">
+        {{ 'files.deleteFileWarning' | translate: { name: file.originalName } }}
+      </p>
+      <div class="flex justify-end gap-2">
+        <button type="button" (click)="pendingDeleteFile.set(null)" class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" (click)="confirmDeleteFile()" class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+          {{ 'common.delete' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Borrar carpeta -->
+@if (pendingDeleteFolder(); as folder) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <h2 class="mb-2 text-lg font-semibold">{{ 'files.deleteFolderTitle' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-600">
+        {{ 'files.deleteFolderWarning' | translate: { name: folder.name } }}
+      </p>
+      <div class="flex justify-end gap-2">
+        <button type="button" (click)="pendingDeleteFolder.set(null)" class="rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="button" (click)="confirmDeleteFolder()" class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+          {{ 'common.delete' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

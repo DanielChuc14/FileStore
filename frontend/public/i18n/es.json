@@ -1,0 +1,258 @@
+{
+  "app": {
+    "name": "FileStore",
+    "tagline": "Gestión de archivos multi-cliente"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "files": "Archivos",
+    "trash": "Papelera",
+    "apiKeys": "API Keys",
+    "audit": "Auditoría",
+    "profile": "Perfil",
+    "clients": "Clientes",
+    "overview": "Resumen",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "login": {
+    "subtitle": "Inicia sesión para continuar",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submit": "Iniciar sesión",
+    "submitting": "Iniciando sesión...",
+    "errors": {
+      "emailInvalid": "Ingresa un correo electrónico válido",
+      "passwordRequired": "La contraseña es obligatoria",
+      "invalidCredentials": "Correo o contraseña incorrectos",
+      "unexpected": "No se pudo conectar con el servidor"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Sesión iniciada como {{email}}",
+    "storage": "Almacenamiento",
+    "quotaWarning": "Estás cerca del límite de tu cuota. Vacía la papelera o elimina archivos que no uses.",
+    "files": "Archivos",
+    "inTrash": "En papelera",
+    "available": "Disponible",
+    "activity": "Actividad de los últimos 30 días",
+    "noActivity": "Sin actividad registrada en el período"
+  },
+  "adminStats": {
+    "title": "Resumen del servicio",
+    "subtitle": "Métricas globales de todos los clientes.",
+    "clients": "Clientes activos",
+    "blocked": "{{count}} bloqueado(s)",
+    "diskUsed": "Disco utilizado",
+    "ofAssigned": "de ",
+    "files": "Archivos",
+    "inTrash": "En papelera",
+    "activity": "Actividad de los últimos 30 días",
+    "topClients": "Clientes con mayor consumo",
+    "noClients": "Todavía no hay clientes con consumo"
+  },
+  "audit": {
+    "title": "Auditoría",
+    "subtitle": "Registro de todas las operaciones realizadas en tu cuenta.",
+    "empty": "No hay eventos que coincidan con los filtros",
+    "action": "Acción",
+    "allActions": "Todas las acciones",
+    "from": "Desde",
+    "to": "Hasta",
+    "clear": "Limpiar",
+    "date": "Fecha",
+    "actor": "Origen",
+    "resource": "Recurso",
+    "ip": "IP",
+    "showDetails": "Ver detalle",
+    "hideDetails": "Ocultar",
+    "total": "{{count}} evento(s)",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "settings": {
+    "title": "Configuración del sistema",
+    "subtitle": "Valores por defecto que se aplican a todos los clientes sin override propio.",
+    "defaults": "Valores por defecto",
+    "maxFileSize": "Tamaño máximo por archivo (MB)",
+    "maxFileSizeHint": "Un cliente puede tener su propio límite.",
+    "retention": "Retención en papelera (días)",
+    "retentionHint": "Tras ese plazo, los archivos se purgan solos.",
+    "rateLimit": "Límite de peticiones por minuto",
+    "rateLimitHint": "Se aplica por API Key que no defina el suyo.",
+    "saved": "Cambios guardados",
+    "applied": "Aplicado",
+    "allowedTypes": "Tipos de archivo permitidos",
+    "allowedTypesHint": "Los cambios se aplican al instante, sin necesidad de guardar. Al deshabilitar una extensión, las subidas con ese tipo se rechazan de inmediato.",
+    "errors": {
+      "load": "No se pudo cargar la configuración",
+      "save": "No se pudieron guardar los cambios",
+      "retentionRange": "Debe estar entre 1 y 365 días",
+      "invalidForm": "Revisa los valores marcados en rojo"
+    }
+  },
+  "clients": {
+    "title": "Clientes",
+    "create": "Nuevo cliente",
+    "searchPlaceholder": "Buscar por correo o nombre...",
+    "empty": "No hay clientes todavía",
+    "total": "{{count}} cliente(s)",
+    "quotaMb": "Cuota (MB)",
+    "active": "Activo",
+    "blocked": "Bloqueado",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "resetPassword": "Resetear contraseña",
+    "remove": "Dar de baja",
+    "removeTitle": "Dar de baja la cuenta",
+    "removeWarning": "Estás por dar de baja a {{email}}. Esto implica:",
+    "removeConfirm": "Sí, dar de baja",
+    "removeEffects": {
+      "login": "El cliente ya no podrá iniciar sesión",
+      "sessions": "Se cerrarán todas sus sesiones abiertas",
+      "data": "Sus archivos y su historial se conservan en la base de datos"
+    },
+    "copy": "Copiar",
+    "passwordTitle": "Contraseña generada",
+    "passwordWarning": "Esta es la única vez que se muestra la contraseña de {{email}}. Guárdala ahora: no se puede recuperar después.",
+    "passwordSaved": "Ya la guardé",
+    "columns": {
+      "email": "Correo",
+      "name": "Nombre",
+      "usage": "Consumo",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "errors": {
+      "emailTaken": "Ese correo ya está registrado",
+      "unexpected": "No se pudo completar la operación"
+    }
+  },
+  "files": {
+    "title": "Archivos",
+    "root": "Inicio",
+    "empty": "Esta carpeta está vacía",
+    "upload": "Subir archivo",
+    "uploading": "Subiendo...",
+    "newFolder": "Nueva carpeta",
+    "folderNamePlaceholder": "Nombre de la carpeta",
+    "download": "Descargar",
+    "versions": "Versiones",
+    "versionsTitle": "Historial de versiones",
+    "versionNumber": "Versión",
+    "currentVersion": "Vigente",
+    "restoreVersion": "Restaurar",
+    "versionsHint": "Restaurar una versión anterior no crea una versión nueva ni consume cuota adicional: solo cambia cuál es la vigente.",
+    "deleteFileTitle": "Mover a la papelera",
+    "deleteFileWarning": "\"{{name}}\" se moverá a la papelera. Va a seguir ocupando cuota hasta que lo elimines definitivamente o se purgue automáticamente.",
+    "deleteFolderTitle": "Eliminar carpeta",
+    "deleteFolderWarning": "Se eliminará \"{{name}}\" con sus subcarpetas. Los archivos que contenga se moverán a la papelera, no se borrarán.",
+    "columns": {
+      "name": "Nombre",
+      "size": "Tamaño",
+      "versions": "Versiones",
+      "modified": "Modificado",
+      "actions": "Acciones"
+    },
+    "errors": {
+      "load": "No se pudo cargar el contenido",
+      "folderExists": "Ya existe una carpeta con ese nombre aquí",
+      "tooLarge": "El archivo excede el tamaño máximo o tu cuota disponible",
+      "notAllowed": "Ese tipo de archivo no está permitido",
+      "download": "No se pudo descargar el archivo",
+      "unexpected": "No se pudo completar la operación"
+    }
+  },
+  "trash": {
+    "title": "Papelera",
+    "subtitle": "Los archivos eliminados siguen ocupando cuota hasta que se purgan.",
+    "empty": "La papelera está vacía",
+    "deletedAt": "Eliminado",
+    "purgeAt": "Se purga",
+    "today": "Hoy",
+    "inOneDay": "Mañana",
+    "inDays": "En {{days}} días",
+    "restore": "Restaurar",
+    "purgeNow": "Eliminar definitivamente",
+    "purgeTitle": "Eliminar definitivamente",
+    "purgeWarning": "Estás por eliminar \"{{name}}\" de forma permanente. Esto implica:",
+    "purgeConfirm": "Sí, eliminar",
+    "purgeEffects": {
+      "versions": "Se borran todas sus versiones del disco",
+      "quota": "Se libera la cuota que ocupaba",
+      "irreversible": "No se puede deshacer"
+    },
+    "errors": {
+      "load": "No se pudo cargar la papelera",
+      "nameTaken": "Ya existe un archivo con ese nombre en el destino. Renombra o mueve el existente antes de restaurar.",
+      "unexpected": "No se pudo completar la operación"
+    }
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "subtitle": "Credenciales para que tus sistemas consuman la API de FileStore.",
+    "create": "Nueva API Key",
+    "empty": "No tenés API Keys todavía",
+    "namePlaceholder": "producción, staging, mobile-app...",
+    "defaultLimit": "Por defecto",
+    "never": "Nunca",
+    "active": "Activa",
+    "revoked": "Revocada",
+    "rotate": "Rotar",
+    "revoke": "Revocar",
+    "rotateTitle": "Rotar la API Key",
+    "rotateWarning": "Se generará una key nueva para \"{{name}}\" y la actual dejará de funcionar de inmediato. Actualiza tus sistemas antes de rotar.",
+    "revokeTitle": "Revocar la API Key",
+    "revokeWarning": "\"{{name}}\" dejará de funcionar de inmediato y no se puede reactivar. Cualquier sistema que la use perderá el acceso.",
+    "valueTitle": "API Key generada",
+    "valueWarning": "Esta es la única vez que se muestra el valor completo. Guárdalo ahora: no se puede recuperar después.",
+    "usageHint": "Envíala en el header de cada petición:",
+    "columns": {
+      "name": "Nombre",
+      "prefix": "Prefijo",
+      "rateLimit": "Límite por minuto",
+      "lastUsed": "Último uso",
+      "status": "Estado",
+      "actions": "Acciones"
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Datos de tu cuenta y cambio de contraseña.",
+    "account": "Cuenta",
+    "quota": "Consumo",
+    "memberSince": "Cliente desde",
+    "maxFileSize": "Tamaño máximo por archivo",
+    "retention": "Retención en papelera",
+    "systemDefault": "Valor del sistema",
+    "days": "días",
+    "changePassword": "Cambiar contraseña",
+    "changePasswordHint": "Al cambiarla se cerrarán tus demás sesiones abiertas, pero no esta.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Contraseña nueva",
+    "confirmPassword": "Repetir contraseña nueva",
+    "passwordHint": "Mínimo 12 caracteres.",
+    "passwordChanged": "Contraseña actualizada. Tus otras sesiones se cerraron.",
+    "errors": {
+      "load": "No se pudo cargar el perfil",
+      "wrongPassword": "La contraseña actual es incorrecta",
+      "invalidPassword": "La contraseña nueva no cumple los requisitos",
+      "mismatch": "Las contraseñas nuevas no coinciden",
+      "tooShort": "Debe tener al menos 12 caracteres",
+      "unexpected": "No se pudo completar la operación"
+    }
+  },
+  "placeholder": {
+    "comingSoon": "Esta sección se construye en la Fase {{phase}}."
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "close": "Cerrar",
+    "search": "Buscar"
+  }
+}

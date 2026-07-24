@@ -1,0 +1,127 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-xl font-semibold">{{ 'settings.title' | translate }}</h1>
+    <p class="mt-1 text-sm text-slate-500">{{ 'settings.subtitle' | translate }}</p>
+  </div>
+
+  @if (errorKey(); as key) {
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+      {{ key | translate }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <p class="text-sm text-slate-500">{{ 'common.loading' | translate }}</p>
+  } @else {
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <h2 class="mb-4 font-medium">{{ 'settings.defaults' | translate }}</h2>
+
+      <form [formGroup]="configForm" (ngSubmit)="save()" class="space-y-4">
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              {{ 'settings.maxFileSize' | translate }}
+            </label>
+            <input
+              type="number"
+              formControlName="maxFileSizeMb"
+              min="1"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            />
+            <p class="mt-1 text-xs text-slate-500">{{ 'settings.maxFileSizeHint' | translate }}</p>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              {{ 'settings.retention' | translate }}
+            </label>
+            <input
+              type="number"
+              formControlName="trashRetentionDays"
+              min="1"
+              max="365"
+              class="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+              [class]="
+                configForm.controls.trashRetentionDays.touched &&
+                configForm.controls.trashRetentionDays.invalid
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                  : 'border-slate-300 focus:border-slate-500 focus:ring-slate-200'
+              "
+            />
+            @if (
+              configForm.controls.trashRetentionDays.touched &&
+              configForm.controls.trashRetentionDays.invalid
+            ) {
+              <p class="mt-1 text-xs text-red-600">{{ 'settings.errors.retentionRange' | translate }}</p>
+            } @else {
+              <p class="mt-1 text-xs text-slate-500">{{ 'settings.retentionHint' | translate }}</p>
+            }
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              {{ 'settings.rateLimit' | translate }}
+            </label>
+            <input
+              type="number"
+              formControlName="rateLimitDefaultPerMinute"
+              min="1"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            />
+            <p class="mt-1 text-xs text-slate-500">{{ 'settings.rateLimitHint' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            type="submit"
+            [disabled]="isSaving()"
+            class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+
+          @if (savedMessage()) {
+            <span class="text-sm text-green-700">{{ 'settings.saved' | translate }}</span>
+          }
+
+          @if (configForm.touched && configForm.invalid) {
+            <span class="text-sm text-red-600">{{ 'settings.errors.invalidForm' | translate }}</span>
+          }
+        </div>
+      </form>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <h2 class="mb-1 font-medium">{{ 'settings.allowedTypes' | translate }}</h2>
+      <p class="mb-4 text-sm text-slate-500">{{ 'settings.allowedTypesHint' | translate }}</p>
+
+      <!-- grid responsivo: las extensiones son cortas y se acomodan en columnas -->
+      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        @for (type of types(); track type.id) {
+          <label class="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 px-3 py-2 hover:bg-slate-50">
+            <input
+              type="checkbox"
+              [checked]="type.isEnabled"
+              (change)="toggleType(type)"
+              class="size-4 shrink-0 rounded border-slate-300"
+            />
+            <!-- min-w-0 es imprescindible: sin el, un hijo flex no baja de su
+                 ancho de contenido y truncate no tiene efecto. El MIME de docx
+                 mide 71 caracteres y se desbordaba sobre la celda vecina. -->
+            <span class="flex min-w-0 flex-1 flex-col">
+              <span class="font-mono text-sm font-medium">.{{ type.extension }}</span>
+              <span class="truncate text-xs text-slate-400" [title]="type.mimeType">
+                {{ type.mimeType }}
+              </span>
+            </span>
+
+            @if (justToggled() === type.id) {
+              <span class="shrink-0 text-xs text-green-700">{{ 'settings.applied' | translate }}</span>
+            }
+          </label>
+        }
+      </div>
+    </section>
+  }
+</div>

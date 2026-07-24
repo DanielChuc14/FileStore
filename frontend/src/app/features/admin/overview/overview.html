@@ -1,0 +1,81 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-xl font-semibold">{{ 'adminStats.title' | translate }}</h1>
+    <p class="mt-1 text-sm text-slate-500">{{ 'adminStats.subtitle' | translate }}</p>
+  </div>
+
+  @if (isLoading()) {
+    <p class="text-sm text-slate-500">{{ 'common.loading' | translate }}</p>
+  } @else if (stats(); as s) {
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'adminStats.clients' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ s.activeClients }}</p>
+        @if (s.blockedClients > 0) {
+          <p class="mt-1 text-xs text-amber-600">
+            {{ 'adminStats.blocked' | translate: { count: s.blockedClients } }}
+          </p>
+        }
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'adminStats.diskUsed' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ s.totalUsedBytes | formatBytes }}</p>
+        <p class="mt-1 text-xs text-slate-400">
+          {{ 'adminStats.ofAssigned' | translate: { total: '' } }}{{ s.totalQuotaBytes | formatBytes }}
+        </p>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'adminStats.files' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ s.totalFiles }}</p>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-white p-5">
+        <p class="text-sm text-slate-500">{{ 'adminStats.inTrash' | translate }}</p>
+        <p class="mt-1 text-2xl font-semibold">{{ s.filesInTrash }}</p>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <h2 class="mb-4 font-medium">{{ 'adminStats.activity' | translate }}</h2>
+      <app-line-chart
+        [labels]="chartLabels()"
+        [series]="chartSeries()"
+        [emptyMessage]="'dashboard.noActivity' | translate"
+      />
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <h2 class="mb-4 font-medium">{{ 'adminStats.topClients' | translate }}</h2>
+
+      @if (s.topClients.length === 0) {
+        <p class="text-sm text-slate-500">{{ 'adminStats.noClients' | translate }}</p>
+      } @else {
+        <div class="space-y-3">
+          @for (client of s.topClients; track client.id) {
+            <div>
+              <div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                <!-- Se muestra tambien el email: el nombre puede repetirse entre
+                     clientes distintos y solo con el no se distinguen. -->
+                <span class="min-w-0 flex-1 truncate">
+                  <span class="font-medium">{{ client.name }}</span>
+                  <span class="ml-2 text-xs text-slate-400">{{ client.email }}</span>
+                </span>
+                <span class="shrink-0 text-slate-500">
+                  {{ client.usedBytes | formatBytes }} / {{ client.quotaBytes | formatBytes }}
+                </span>
+              </div>
+              <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  class="h-full rounded-full bg-slate-900"
+                  [style.width.%]="usagePercent(client.usedBytes, client.quotaBytes)"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

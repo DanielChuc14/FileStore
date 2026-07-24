@@ -1,0 +1,7 @@
+# Nada de esto debe entrar al contexto de build: son artefactos locales que
+# harian la imagen mas pesada y podrian filtrar secretos o estado de desarrollo.
+**/bin/
+**/obj/
+**/*.user
+**/appsettings.Development.json
+tests/
