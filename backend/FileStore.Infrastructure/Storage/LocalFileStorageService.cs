@@ -25,7 +25,15 @@ public class LocalFileStorageService : IStorageService
 
     public LocalFileStorageService(IOptions<StorageSettings> options)
     {
-        _basePath = Path.GetFullPath(options.Value.BasePath);
+        var root = Path.GetFullPath(options.Value.BasePath);
+
+        // Se garantiza el separador final. Sin el, la comprobacion anti-traversal
+        // (StartsWith) aceptaria un directorio hermano con prefijo comun: una raiz
+        // ".../storage" dejaria pasar ".../storage-evil".
+        _basePath = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
         Directory.CreateDirectory(_basePath);
     }
 

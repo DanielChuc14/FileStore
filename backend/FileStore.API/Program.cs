@@ -92,6 +92,17 @@ builder.Services.AddMemoryCache();
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Falta la seccion de configuracion 'Jwt'.");
 
+// El secreto firma los access tokens con HMAC-SHA256. Debajo de 256 bits (32
+// bytes) la firma se debilita, y un secreto vacio por un error de despliegue
+// firmaria con una clave nula sin avisar. Se valida al arranque para fallar
+// rapido en vez de operar con tokens inseguros.
+if (string.IsNullOrWhiteSpace(jwtSettings.Secret) ||
+    Encoding.UTF8.GetByteCount(jwtSettings.Secret) < 32)
+{
+    throw new InvalidOperationException(
+        "'Jwt:Secret' debe tener al menos 32 bytes (256 bits) para HMAC-SHA256.");
+}
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -181,6 +192,30 @@ builder.Services.AddRateLimiter(options =>
         });
     });
 
+    // Limite por IP para los endpoints de credenciales (/auth). El GlobalLimiter
+    // de arriba solo frena el trafico con API Key; el login es anonimo y sin esto
+    // no tendria ningun freno frente a fuerza bruta o credential stuffing.
+    options.AddPolicy("auth", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString();
+
+        // Sin IP identificable no se puede particionar por origen. En produccion,
+        // detras de Nginx, ForwardedHeaders siempre recupera la IP real del
+        // cliente; el unico caso sin IP es el host de test en memoria.
+        if (string.IsNullOrEmpty(ip))
+        {
+            return RateLimitPartition.GetNoLimiter("no-ip");
+        }
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+
     options.OnRejected = async (context, cancellationToken) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
@@ -253,11 +288,19 @@ if (!app.Environment.IsDevelopment())
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
     };
 
-    // El proxy es otro contenedor de la red de Docker, con IP dinamica. Se
-    // vacian las listas de proxies conocidos para confiar en el unico salto que
-    // hay dentro de la red privada del compose.
-    forwardedOptions.KnownNetworks.Clear();
+    // Solo se confia en el proxy que corre dentro de la red del compose. Se
+    // limpian las listas por defecto y se declara unicamente esa subred (fijada
+    // en docker-compose.prod.yml via ForwardedHeaders__KnownNetwork). Asi, si el
+    // puerto de la API quedara expuesto, un X-Forwarded-For de un origen externo
+    // no podria falsear la IP que queda en el audit log.
+    forwardedOptions.KnownIPNetworks.Clear();
     forwardedOptions.KnownProxies.Clear();
+
+    var knownNetwork = app.Configuration["ForwardedHeaders:KnownNetwork"];
+    if (!string.IsNullOrWhiteSpace(knownNetwork))
+    {
+        forwardedOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(knownNetwork));
+    }
 
     app.UseForwardedHeaders(forwardedOptions);
 }

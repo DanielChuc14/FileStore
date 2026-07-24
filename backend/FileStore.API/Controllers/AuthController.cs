@@ -7,11 +7,15 @@ using FileStore.Application.Features.Auth.Refresh;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FileStore.API.Controllers;
 
 [ApiController]
 [Route("auth")]
+// Limite por IP: frena la fuerza bruta contra el login sin afectar el limite por
+// API Key del resto de la API.
+[EnableRateLimiting("auth")]
 public class AuthController(ISender sender) : ControllerBase
 {
     private const string RefreshCookieName = "fs_refresh";

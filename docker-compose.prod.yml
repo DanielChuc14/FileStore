@@ -44,6 +44,10 @@ services:
       SuperAdmin__Name: ${SUPERADMIN_NAME:-Super Admin}
       # Origen del panel, para CORS. Debe ser el dominio publico con https.
       Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN}
+      # Subred del compose (ver 'networks' abajo). ForwardedHeaders solo confia
+      # en el X-Forwarded-For que llega desde esta red; asi no se puede falsear
+      # la IP del audit log desde fuera.
+      ForwardedHeaders__KnownNetwork: 172.28.0.0/16
     volumes:
       - storage-data:/storage
     # Tampoco se expone al host: solo el frontend/Nginx lo alcanza.
@@ -68,3 +72,12 @@ volumes:
   postgres-data:
   storage-data:
   certbot-webroot:
+
+# Subred fija para la red por defecto del compose. Necesaria para que la API
+# pueda declarar la red del proxy como confiable en ForwardedHeaders (si fuera
+# dinamica, no habria un rango estable que declarar).
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
