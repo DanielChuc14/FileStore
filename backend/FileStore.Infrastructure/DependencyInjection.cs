@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogger, AuditLogger>();
         services.AddScoped<IAppConfigReader, AppConfigReader>();
         services.AddScoped<IFileEraser, FileEraser>();
+        services.AddScoped<ITrashPurger, TrashPurger>();
 
         services.Configure<TrashPurgeSettings>(
             configuration.GetSection(TrashPurgeSettings.SectionName));

@@ -1,5 +1,4 @@
 using FileStore.Application.Abstractions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -81,70 +80,11 @@ public class TrashPurgeService(
 
     private async Task PurgeAsync(CancellationToken cancellationToken)
     {
-        // El servicio es singleton y el DbContext es scoped: hace falta un scope
-        // propio por corrida.
+        // El servicio es singleton y el purger (con su DbContext) es scoped: hace
+        // falta un scope propio por corrida.
         await using var scope = scopeFactory.CreateAsyncScope();
 
-        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-        var appConfig = scope.ServiceProvider.GetRequiredService<IAppConfigReader>();
-        var eraser = scope.ServiceProvider.GetRequiredService<IFileEraser>();
-
-        var globalRetention = await appConfig.GetTrashRetentionDaysAsync(cancellationToken);
-        var now = DateTime.UtcNow;
-
-        // Se traen los candidatos con la retencion de su cliente y el corte se
-        // evalua en memoria: la retencion efectiva depende de un override
-        // nullable por cliente, que no se traduce a SQL de forma confiable.
-        var candidates = await context.Files
-            .AsNoTracking()
-            .Where(f => f.IsDeleted && f.DeletedAt != null)
-            .Select(f => new
-            {
-                f.Id,
-                f.ClientId,
-                f.OriginalName,
-                DeletedAt = f.DeletedAt!.Value,
-                Retention = f.Client.TrashRetentionDays
-            })
-            .Take(_settings.BatchSize * 5)
-            .ToListAsync(cancellationToken);
-
-        var expired = candidates
-            .Where(f => f.DeletedAt.AddDays(f.Retention ?? globalRetention) <= now)
-            .Take(_settings.BatchSize)
-            .ToList();
-
-        if (expired.Count == 0)
-        {
-            return;
-        }
-
-        logger.LogInformation("Purgando {Count} archivos vencidos.", expired.Count);
-
-        long totalFreed = 0;
-
-        foreach (var file in expired)
-        {
-            try
-            {
-                // Cada archivo se borra por separado: si uno falla, los demas
-                // igual se purgan.
-                totalFreed += await eraser.EraseAsync(file.Id, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(
-                    ex,
-                    "No se pudo purgar el archivo {FileId} ({Name}) del cliente {ClientId}.",
-                    file.Id,
-                    file.OriginalName,
-                    file.ClientId);
-            }
-        }
-
-        logger.LogInformation(
-            "Purga completada: {Count} archivos, {Bytes} bytes liberados.",
-            expired.Count,
-            totalFreed);
+        var purger = scope.ServiceProvider.GetRequiredService<ITrashPurger>();
+        await purger.PurgeExpiredAsync(_settings.BatchSize, cancellationToken);
     }
 }
