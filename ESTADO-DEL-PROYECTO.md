@@ -208,10 +208,10 @@ probado a mano ya tienen tests automaticos.
   AuthTests  IsolationTests  FileOperationsTests  VersioningTests  TrashTests
   FolderTests  PurgeTests  RateLimitTests  RefreshTokenTests  AdminConfigTests
   FolderDeleteTests  ClientLifecycleTests  ApiKeyRotationTests  AuditTests
-  ClientEmailTests  PasswordRecoveryTests  NotificationTests
+  ClientEmailTests  PasswordRecoveryTests  NotificationTests  EmailDispatcherTests
   ```
 
-  **87 tests, verificados en verde en Linux (2026-07-26, 23 s).** Crecieron de
+  **95 tests, verificados en verde en Linux (2026-07-26, 24 s).** Crecieron de
   44 a 87 ese mismo dia: primero al cerrar los huecos de mayor riesgo (borrado
   recursivo de carpetas, baja de cliente con token vigente, rotacion de API Key
   y auditoria, que no tenia ni un assert), y despues con el correo transaccional

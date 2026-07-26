@@ -63,6 +63,7 @@ public static class DependencyInjection
         AddEmail(services, configuration);
 
         services.AddScoped<IEmailQueue, EmailQueue>();
+        services.AddScoped<IEmailDispatcher, EmailDispatcher>();
 
         services.Configure<EmailDispatchSettings>(
             configuration.GetSection(EmailDispatchSettings.SectionName));

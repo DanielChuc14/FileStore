@@ -99,7 +99,15 @@ correo dos veces.
 ### Reintentos
 
 Espera creciente entre intentos (2, 4, 8, 16 min) y se rinde a los 5, marcando
-la fila como `Failed` con el motivo en `LastError`. Consultar los atascados:
+la fila como `Failed` con el motivo en `LastError`.
+
+La lógica vive en `IEmailDispatcher`, no en el `BackgroundService`, por el mismo
+motivo que `ITrashPurger` y `IQuotaAlerter`: un hosted service solo se puede
+probar esperando a su temporizador. `EmailDispatcherTests` cubre el envío
+correcto, el borrado del cuerpo, el reintento programado, la rendición tras N
+intentos, que un ya enviado no se reenvíe y que un fallo no corte el lote.
+
+Consultar los atascados:
 
 ```sql
 SELECT "Recipient", "Subject", "Attempts", "LastError"
