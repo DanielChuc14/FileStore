@@ -1,4 +1,5 @@
 using FileStore.Application.Abstractions;
+using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Domain.Entities;
 using FileStore.Domain.Enums;
@@ -7,16 +8,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FileStore.Application.Features.Clients.ResetPassword;
 
-public record ResetClientPasswordCommand(Guid Id) : IRequest<string>;
+/// <summary>
+/// No devuelve nada: la contraseña nueva viaja por correo al cliente, no por la
+/// respuesta HTTP al super-admin.
+/// </summary>
+public record ResetClientPasswordCommand(Guid Id) : IRequest;
 
 public class ResetClientPasswordCommandHandler(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
     IPasswordGenerator passwordGenerator,
-    IAuditLogger auditLogger)
-    : IRequestHandler<ResetClientPasswordCommand, string>
+    IAuditLogger auditLogger,
+    IEmailQueue emailQueue,
+    IAppUrlProvider urls)
+    : IRequestHandler<ResetClientPasswordCommand>
 {
-    public async Task<string> Handle(
+    public async Task Handle(
         ResetClientPasswordCommand request,
         CancellationToken cancellationToken)
     {
@@ -49,8 +56,10 @@ public class ResetClientPasswordCommandHandler(
             resourceId: client.Id,
             metadata: new { Reset = true, RevokedSessions = sessions.Count });
 
-        await context.SaveChangesAsync(cancellationToken);
+        emailQueue.Enqueue(
+            EmailTemplates.PasswordReset(client.Email, client.Name, password, urls.PanelUrl),
+            client.Id);
 
-        return password;
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

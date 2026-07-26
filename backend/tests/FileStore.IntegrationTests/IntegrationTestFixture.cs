@@ -25,8 +25,14 @@ public class IntegrationTestFixture : IAsyncLifetime
     }
 
     private record LoginResponse(string AccessToken, string Email, string Role);
-    private record CreateClientResponse(ClientPayload Client, string GeneratedPassword);
     public record ClientPayload(Guid Id, string Email, string Name);
+
+    /// <summary>
+    /// Contraseña que el fixture asigna a los clientes que crea. El alta ya no
+    /// devuelve la generada (se la lleva el correo), asi que los tests fijan una
+    /// conocida para poder iniciar sesion.
+    /// </summary>
+    public const string ClientPassword = "ClienteDePrueba2026";
 
     /// <summary>Token JWT del super-admin.</summary>
     public async Task<string> LoginAsAdminAsync()
@@ -43,7 +49,10 @@ public class IntegrationTestFixture : IAsyncLifetime
         return body!.AccessToken;
     }
 
-    /// <summary>Crea un cliente y devuelve su id, email y contraseña generada.</summary>
+    /// <summary>
+    /// Crea un cliente y le fija una contraseña conocida para poder operar con
+    /// el. Devuelve su id, email y esa contraseña.
+    /// </summary>
     public async Task<(Guid Id, string Email, string Password)> CreateClientAsync(long quotaBytes = 10 * 1024 * 1024)
     {
         var adminToken = await LoginAsAdminAsync();
@@ -58,8 +67,13 @@ public class IntegrationTestFixture : IAsyncLifetime
         });
         response.EnsureSuccessStatusCode();
 
-        var body = await response.Content.ReadFromJsonAsync<CreateClientResponse>();
-        return (body!.Client.Id, email, body.GeneratedPassword);
+        var body = await response.Content.ReadFromJsonAsync<ClientPayload>();
+
+        // La generada solo existe dentro del correo encolado; se pisa por una
+        // conocida para que el test pueda autenticarse.
+        await Factory.SetClientPasswordAsync(body!.Id, ClientPassword);
+
+        return (body.Id, email, ClientPassword);
     }
 
     /// <summary>Cliente HTTP con el bearer token ya puesto.</summary>

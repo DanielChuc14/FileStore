@@ -44,6 +44,11 @@ services:
       SuperAdmin__Name: ${SUPERADMIN_NAME:-Super Admin}
       # Origen del panel, para CORS. Debe ser el dominio publico con https.
       Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN}
+      # Raiz publica del panel: los correos enlazan aca.
+      App__PanelUrl: ${PUBLIC_ORIGIN}
+      Resend__ApiKey: ${RESEND_API_KEY:-}
+      Resend__FromAddress: ${RESEND_FROM_ADDRESS:-}
+      Resend__FromName: ${RESEND_FROM_NAME:-FileStore}
       # Subred del compose (ver 'networks' abajo). ForwardedHeaders solo confia
       # en el X-Forwarded-For que llega desde esta red; asi no se puede falsear
       # la IP del audit log desde fuera.

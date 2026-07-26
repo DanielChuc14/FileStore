@@ -14,3 +14,8 @@ public record AuthResponse(
     string Role);
 
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+
+public record ForgotPasswordRequest(string Email);
+
+/// <summary>Token del enlace del correo, mas la contraseña elegida.</summary>
+public record ResetPasswordRequest(string Token, string NewPassword);

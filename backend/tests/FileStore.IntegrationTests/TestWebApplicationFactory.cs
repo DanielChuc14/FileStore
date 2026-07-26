@@ -1,3 +1,5 @@
+using FileStore.Application.Abstractions;
+using FileStore.Domain.Entities;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -42,6 +44,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Storage__BasePath", StoragePath);
         // El job de purga se apaga: no debe interferir con los tests.
         Environment.SetEnvironmentVariable("TrashPurge__Enabled", "false");
+        // Sin clave de Resend el contenedor resuelve LoggingEmailSender, asi que
+        // la suite nunca sale a la red ni manda correo real. Se fija de forma
+        // explicita para que no dependa de lo que haya en el entorno de quien
+        // corra los tests.
+        Environment.SetEnvironmentVariable("Resend__ApiKey", "");
+        // El despachador tampoco corre: un test que verifique la cola quiere ver
+        // el correo encolado, no que un job se lo lleve por debajo.
+        Environment.SetEnvironmentVariable("EmailDispatch__Enabled", "false");
+        // Los avisos de cuota se disparan a mano en su test, no por temporizador.
+        Environment.SetEnvironmentVariable("QuotaAlerts__Enabled", "false");
         Environment.SetEnvironmentVariable("SuperAdmin__Email", AdminEmail);
         Environment.SetEnvironmentVariable("SuperAdmin__Password", AdminPassword);
         Environment.SetEnvironmentVariable("SuperAdmin__Name", "Admin Test");
@@ -75,6 +87,64 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         // seeder encuentra las tablas y crea el super-admin de prueba.
         using var client = CreateClient();
         await client.GetAsync("/health");
+    }
+
+    /// <summary>
+    /// Fija una contraseña conocida para un cliente, directo en la base.
+    ///
+    /// Hace falta desde que el alta dejo de devolver la contraseña generada: la
+    /// unica copia se la lleva el correo. Un test podria extraerla del cuerpo
+    /// encolado, pero eso ata cada test al texto de la plantilla. Escribir el
+    /// hash es determinista y no toca codigo de produccion.
+    /// </summary>
+    public async Task SetClientPasswordAsync(Guid clientId, string password)
+    {
+        using var scope = Services.CreateScope();
+
+        var context = scope.ServiceProvider.GetRequiredService<FileStoreDbContext>();
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+
+        var client = await context.Clients.FirstAsync(c => c.Id == clientId);
+        client.PasswordHash = hasher.Hash(password);
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Fija el consumo de un cliente sin subir archivos de verdad. Llenar una
+    /// cuota real byte a byte haria el test lento y fragil.
+    /// </summary>
+    public async Task SetUsedBytesAsync(Guid clientId, long usedBytes)
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<FileStoreDbContext>();
+
+        var client = await context.Clients.FirstAsync(c => c.Id == clientId);
+        client.UsedBytes = usedBytes;
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>Corre la revision de cuotas a mano, sin esperar al temporizador.</summary>
+    public async Task<int> RunQuotaCheckAsync()
+    {
+        using var scope = Services.CreateScope();
+        var alerter = scope.ServiceProvider.GetRequiredService<IQuotaAlerter>();
+
+        return await alerter.CheckAsync();
+    }
+
+    /// <summary>Correos encolados para un destinatario, del mas nuevo al mas viejo.</summary>
+    public async Task<List<EmailOutboxMessage>> GetQueuedEmailsAsync(string recipient)
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<FileStoreDbContext>();
+
+        return await context.EmailOutbox
+            .AsNoTracking()
+            .Where(m => m.Recipient == recipient)
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync();
     }
 
     protected override void Dispose(bool disposing)

@@ -27,8 +27,6 @@ public record ClientDto(
         client.UpdatedAt);
 }
 
-/// <summary>
-/// La contraseña generada viaja solo en esta respuesta y nunca mas: en la base
-/// queda unicamente su hash. Si se pierde, hay que resetearla.
-/// </summary>
-public record CreateClientResult(ClientDto Client, string GeneratedPassword);
+// CreateClientResult se elimino: la contraseña generada ya no vuelve en la
+// respuesta HTTP. Va por correo directo al cliente, y asi ni el super-admin ni
+// el log del panel llegan a verla. Si se pierde, se resetea.

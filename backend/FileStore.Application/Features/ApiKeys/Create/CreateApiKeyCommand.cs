@@ -1,10 +1,12 @@
 using FileStore.Application.Abstractions;
+using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.ApiKeys.Common;
 using FileStore.Domain.Entities;
 using FileStore.Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace FileStore.Application.Features.ApiKeys.Create;
 
@@ -26,7 +28,9 @@ public class CreateApiKeyCommandHandler(
     IApplicationDbContext context,
     IApiKeyGenerator generator,
     ICurrentUser currentUser,
-    IAuditLogger auditLogger)
+    IAuditLogger auditLogger,
+    IEmailQueue emailQueue,
+    IAppUrlProvider urls)
     : IRequestHandler<CreateApiKeyCommand, CreateApiKeyResult>
 {
     public async Task<CreateApiKeyResult> Handle(
@@ -60,6 +64,23 @@ public class CreateApiKeyCommandHandler(
             resourceType: nameof(ApiKey),
             resourceId: apiKey.Id,
             metadata: new { apiKey.Name, apiKey.Prefix });
+
+        var client = await context.Clients
+            .Where(c => c.Id == clientId)
+            .Select(c => new { c.Email, c.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (client is not null)
+        {
+            // Una API Key da acceso completo a los archivos del cliente. Avisar
+            // de su creacion es lo que le permite detectar que alguien mas entro
+            // a su panel.
+            emailQueue.Enqueue(
+                EmailTemplates.ApiKeyActivity(
+                    client.Email, client.Name, apiKey.Name, apiKey.Prefix,
+                    rotated: false, urls.PanelUrl),
+                clientId);
+        }
 
         await context.SaveChangesAsync(cancellationToken);
 

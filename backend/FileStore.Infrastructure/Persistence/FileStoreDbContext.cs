@@ -17,6 +17,8 @@ public class FileStoreDbContext(DbContextOptions<FileStoreDbContext> options)
     public DbSet<AllowedFileType> AllowedFileTypes => Set<AllowedFileType>();
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<EmailOutboxMessage> EmailOutbox => Set<EmailOutboxMessage>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     public async Task<IAsyncDisposable> BeginTransactionAsync(
         CancellationToken cancellationToken = default) =>

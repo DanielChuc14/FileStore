@@ -1,4 +1,5 @@
 using FileStore.Application.Abstractions;
+using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.ApiKeys.Common;
 using FileStore.Application.Features.ApiKeys.Create;
@@ -20,7 +21,9 @@ public class RotateApiKeyCommandHandler(
     IApplicationDbContext context,
     IApiKeyGenerator generator,
     ICurrentUser currentUser,
-    IAuditLogger auditLogger)
+    IAuditLogger auditLogger,
+    IEmailQueue emailQueue,
+    IAppUrlProvider urls)
     : IRequestHandler<RotateApiKeyCommand, CreateApiKeyResult>
 {
     public async Task<CreateApiKeyResult> Handle(
@@ -64,10 +67,38 @@ public class RotateApiKeyCommandHandler(
                 replacement.Name
             });
 
+        await NotifyAsync(clientId, replacement.Name, replacement.Prefix, cancellationToken);
+
         await context.SaveChangesAsync(cancellationToken);
 
         return new CreateApiKeyResult(
             CreateApiKeyCommandHandler.ToDto(replacement),
             generated.Value);
+    }
+
+    /// <summary>
+    /// Avisa al cliente de que se emitio una credencial nueva. Si la rotacion no
+    /// la pidio el, es la señal de que alguien tiene acceso a su panel.
+    /// </summary>
+    private async Task NotifyAsync(
+        Guid clientId,
+        string keyName,
+        string prefix,
+        CancellationToken cancellationToken)
+    {
+        var client = await context.Clients
+            .Where(c => c.Id == clientId)
+            .Select(c => new { c.Email, c.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (client is null)
+        {
+            return;
+        }
+
+        emailQueue.Enqueue(
+            EmailTemplates.ApiKeyActivity(
+                client.Email, client.Name, keyName, prefix, rotated: true, urls.PanelUrl),
+            clientId);
     }
 }

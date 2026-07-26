@@ -9,7 +9,7 @@ public record CreateClientCommand(
     string Name,
     long QuotaBytes,
     int? TrashRetentionDays,
-    long? MaxFileSizeBytes) : IRequest<CreateClientResult>;
+    long? MaxFileSizeBytes) : IRequest<ClientDto>;
 
 public class CreateClientCommandValidator : AbstractValidator<CreateClientCommand>
 {

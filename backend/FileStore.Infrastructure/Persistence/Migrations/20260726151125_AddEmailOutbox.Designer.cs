@@ -3,6 +3,7 @@ using System;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FileStore.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(FileStoreDbContext))]
-    partial class FileStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726151125_AddEmailOutbox")]
+    partial class AddEmailOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -301,9 +304,6 @@ namespace FileStore.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
-                    b.Property<int?>("QuotaAlertPercent")
-                        .HasColumnType("integer");
-
                     b.Property<long>("QuotaBytes")
                         .HasColumnType("bigint");
 
@@ -460,43 +460,6 @@ namespace FileStore.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Folders", (string)null);
-                });
-
-            modelBuilder.Entity("FileStore.Domain.Entities.PasswordResetToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClientId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedByIp")
-                        .HasMaxLength(45)
-                        .HasColumnType("character varying(45)");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClientId");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique();
-
-                    b.ToTable("PasswordResetTokens", (string)null);
                 });
 
             modelBuilder.Entity("FileStore.Domain.Entities.RefreshToken", b =>
@@ -703,17 +666,6 @@ namespace FileStore.Infrastructure.Persistence.Migrations
                     b.Navigation("Client");
 
                     b.Navigation("ParentFolder");
-                });
-
-            modelBuilder.Entity("FileStore.Domain.Entities.PasswordResetToken", b =>
-                {
-                    b.HasOne("FileStore.Domain.Entities.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("FileStore.Domain.Entities.StoredFile", b =>

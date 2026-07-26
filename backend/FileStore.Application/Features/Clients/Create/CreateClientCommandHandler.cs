@@ -1,4 +1,5 @@
 using FileStore.Application.Abstractions;
+using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.Clients.Common;
 using FileStore.Domain.Entities;
@@ -12,10 +13,12 @@ public class CreateClientCommandHandler(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
     IPasswordGenerator passwordGenerator,
-    IAuditLogger auditLogger)
-    : IRequestHandler<CreateClientCommand, CreateClientResult>
+    IAuditLogger auditLogger,
+    IEmailQueue emailQueue,
+    IAppUrlProvider urls)
+    : IRequestHandler<CreateClientCommand, ClientDto>
 {
-    public async Task<CreateClientResult> Handle(
+    public async Task<ClientDto> Handle(
         CreateClientCommand request,
         CancellationToken cancellationToken)
     {
@@ -60,8 +63,18 @@ public class CreateClientCommandHandler(
             resourceId: client.Id,
             metadata: new { client.Email, client.Name, client.QuotaBytes });
 
+        // Se encola, no se envia: la fila del correo se confirma en el mismo
+        // SaveChanges que el cliente. Si el alta fallara aqui, no se manda la
+        // contraseña de una cuenta que nunca existio.
+        emailQueue.Enqueue(
+            EmailTemplates.Welcome(client.Email, client.Name, password, urls.PanelUrl),
+            client.Id);
+
         await context.SaveChangesAsync(cancellationToken);
 
-        return new CreateClientResult(ClientDto.From(client), password);
+        // La contraseña no vuelve en la respuesta: solo la recibe el cliente por
+        // correo. Devolverla obligaba al super-admin a hacersela llegar por su
+        // cuenta, y ese canal (chat, etc.) es el eslabon mas debil de todo esto.
+        return ClientDto.From(client);
     }
 }

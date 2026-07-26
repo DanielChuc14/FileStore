@@ -1,9 +1,11 @@
 using FileStore.API.Contracts;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.Auth.Common;
+using FileStore.Application.Features.Auth.ForgotPassword;
 using FileStore.Application.Features.Auth.Login;
 using FileStore.Application.Features.Auth.Logout;
 using FileStore.Application.Features.Auth.Refresh;
+using FileStore.Application.Features.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +47,52 @@ public class AuthController(ISender sender) : ControllerBase
         return Ok(ToResponse(result));
     }
 
+    /// <summary>
+    /// Pide un enlace de recuperacion por correo.
+    ///
+    /// Responde 204 SIEMPRE, exista o no la cuenta. Devolver 404 para un email
+    /// desconocido convertiria este endpoint en un enumerador de clientes
+    /// registrados, que es justo lo que el login evita con su hash de descarte.
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await sender.Send(
+            new ForgotPasswordCommand(request.Email, GetIpAddress()),
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Canjea el token del correo por una contraseña nueva. Cierra todas las
+    /// sesiones abiertas del cliente.
+    /// </summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await sender.Send(
+            new ResetPasswordCommand(request.Token, request.NewPassword),
+            cancellationToken);
+
+        // La cookie de refresh que pudiera quedar en el navegador ya no sirve:
+        // el canje revoco todas las sesiones. Se borra para que el panel no
+        // intente renovar con una credencial muerta.
+        ClearRefreshCookie();
+
+        return NoContent();
+    }
+
     [HttpPost("refresh")]
     [AllowAnonymous]
     [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
@@ -76,6 +124,16 @@ public class AuthController(ISender sender) : ControllerBase
             new LogoutCommand(Request.Cookies[RefreshCookieName]),
             cancellationToken);
 
+        ClearRefreshCookie();
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Borra la cookie de refresh. Las opciones tienen que coincidir con las de
+    /// SetRefreshCookie o el navegador no la reconoce como la misma y no la borra.
+    /// </summary>
+    private void ClearRefreshCookie() =>
         Response.Cookies.Delete(RefreshCookieName, new CookieOptions
         {
             Path = RefreshCookiePath,
@@ -83,9 +141,6 @@ public class AuthController(ISender sender) : ControllerBase
             HttpOnly = true,
             SameSite = SameSiteMode.Strict
         });
-
-        return NoContent();
-    }
 
     private void SetRefreshCookie(AuthenticationResult result)
     {

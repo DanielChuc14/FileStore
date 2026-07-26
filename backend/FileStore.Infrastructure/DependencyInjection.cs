@@ -1,6 +1,8 @@
+using System.Net.Http.Headers;
 using FileStore.Application.Abstractions;
 using FileStore.Infrastructure.Authentication;
 using FileStore.Infrastructure.BackgroundJobs;
+using FileStore.Infrastructure.Email;
 using FileStore.Infrastructure.Persistence;
 using FileStore.Infrastructure.Services;
 using FileStore.Infrastructure.Storage;
@@ -37,6 +39,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
         services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();
+        services.AddSingleton<ISecureTokenGenerator, SecureTokenGenerator>();
 
         services.AddOptions<StorageSettings>()
             .Bind(configuration.GetSection(StorageSettings.SectionName))
@@ -52,6 +55,24 @@ public static class DependencyInjection
         services.AddScoped<IAppConfigReader, AppConfigReader>();
         services.AddScoped<IFileEraser, FileEraser>();
         services.AddScoped<ITrashPurger, TrashPurger>();
+        services.AddScoped<IQuotaAlerter, QuotaAlerter>();
+
+        services.Configure<AppSettings>(configuration.GetSection(AppSettings.SectionName));
+        services.AddSingleton<IAppUrlProvider, AppUrlProvider>();
+
+        AddEmail(services, configuration);
+
+        services.AddScoped<IEmailQueue, EmailQueue>();
+
+        services.Configure<EmailDispatchSettings>(
+            configuration.GetSection(EmailDispatchSettings.SectionName));
+
+        services.AddHostedService<EmailDispatchService>();
+
+        services.Configure<QuotaAlertSettings>(
+            configuration.GetSection(QuotaAlertSettings.SectionName));
+
+        services.AddHostedService<QuotaAlertService>();
 
         services.Configure<TrashPurgeSettings>(
             configuration.GetSection(TrashPurgeSettings.SectionName));
@@ -62,5 +83,32 @@ public static class DependencyInjection
         services.AddScoped<DemoDataSeeder>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Registra el envio de correo. Sin clave o sin remitente configurados se usa
+    /// el sustituto que escribe en el log: la app tiene que arrancar igual, o
+    /// desarrollar y correr los tests exigiria una cuenta de Resend.
+    /// </summary>
+    private static void AddEmail(IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(ResendSettings.SectionName);
+        services.Configure<ResendSettings>(section);
+
+        var settings = section.Get<ResendSettings>() ?? new ResendSettings();
+
+        if (!settings.IsConfigured)
+        {
+            services.AddSingleton<IEmailSender, LoggingEmailSender>();
+            return;
+        }
+
+        services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.resend.com/");
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", settings.ApiKey);
+            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
+        });
     }
 }

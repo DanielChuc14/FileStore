@@ -1,4 +1,5 @@
 using FileStore.Application.Abstractions;
+using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.Auth.Common;
 using FileStore.Domain.Entities;
@@ -12,6 +13,8 @@ namespace FileStore.Application.Features.Auth.Refresh;
 public class RefreshTokenCommandHandler(
     IApplicationDbContext context,
     IJwtTokenGenerator tokenGenerator,
+    IEmailQueue emailQueue,
+    IAppUrlProvider urls,
     ILogger<RefreshTokenCommandHandler> logger)
     : IRequestHandler<RefreshTokenCommand, AuthenticationResult>
 {
@@ -42,6 +45,13 @@ public class RefreshTokenCommandHandler(
                 stored.UserType, stored.UserId);
 
             await RevokeAllSessionsAsync(stored.UserId, stored.UserType, cancellationToken);
+
+            // Se avisa al dueño de la cuenta. Hasta ahora la reutilizacion se
+            // detectaba, se cortaba y no se le decia a nadie: el cliente solo
+            // veia que su sesion murio sin motivo aparente, y el indicio de que
+            // le habian copiado la sesion se perdia en el log del servidor.
+            await NotifySuspiciousActivityAsync(stored, cancellationToken);
+
             await context.SaveChangesAsync(cancellationToken);
 
             throw new InvalidCredentialsException();
@@ -92,6 +102,35 @@ public class RefreshTokenCommandHandler(
             stored.UserId,
             email,
             stored.UserType.ToString());
+    }
+
+    /// <summary>
+    /// Encola el aviso de sesion comprometida. Solo para clientes: el super-admin
+    /// no tiene correo de contacto en el modelo, sus credenciales viven en los
+    /// secretos del servidor.
+    /// </summary>
+    private async Task NotifySuspiciousActivityAsync(
+        RefreshToken stored,
+        CancellationToken cancellationToken)
+    {
+        if (stored.UserType != UserType.Client)
+        {
+            return;
+        }
+
+        var client = await context.Clients
+            .Where(c => c.Id == stored.UserId && !c.IsDeleted)
+            .Select(c => new { c.Email, c.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (client is null)
+        {
+            return;
+        }
+
+        emailQueue.Enqueue(
+            EmailTemplates.SuspiciousSessionActivity(client.Email, client.Name, urls.PanelUrl),
+            stored.UserId);
     }
 
     private async Task RevokeAllSessionsAsync(

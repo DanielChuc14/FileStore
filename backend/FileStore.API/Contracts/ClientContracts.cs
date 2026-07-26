@@ -16,8 +16,8 @@ public record UpdateClientRequest(
     bool ClearTrashRetentionOverride = false,
     bool ClearMaxFileSizeOverride = false);
 
-/// <summary>La contraseña se muestra una unica vez; despues solo queda su hash.</summary>
-public record GeneratedPasswordResponse(string Password);
+// GeneratedPasswordResponse se elimino: ni el alta ni el reseteo devuelven la
+// contraseña. Va por correo al cliente y nunca pasa por el panel.
 
 public record CreateApiKeyRequest(string Name, int? RateLimitPerMinute);
 

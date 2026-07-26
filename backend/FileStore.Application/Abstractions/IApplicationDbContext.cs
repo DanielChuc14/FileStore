@@ -21,6 +21,8 @@ public interface IApplicationDbContext
     DbSet<AllowedFileType> AllowedFileTypes { get; }
     DbSet<AppConfig> AppConfigs { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<EmailOutboxMessage> EmailOutbox { get; }
+    DbSet<PasswordResetToken> PasswordResetTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

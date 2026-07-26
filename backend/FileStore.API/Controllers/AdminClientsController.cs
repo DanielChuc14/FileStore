@@ -36,15 +36,19 @@ public class AdminClientsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken) =>
         Ok(await sender.Send(new GetClientQuery(id), cancellationToken));
 
+    /// <summary>
+    /// Da de alta un cliente. La contraseña generada NO vuelve en la respuesta:
+    /// se le envia por correo directamente al cliente.
+    /// </summary>
     [HttpPost]
-    [ProducesResponseType<CreateClientResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ClientDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CreateClientResult>> Create(
+    public async Task<ActionResult<ClientDto>> Create(
         CreateClientRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(
+        var client = await sender.Send(
             new CreateClientCommand(
                 request.Email,
                 request.Name,
@@ -53,7 +57,7 @@ public class AdminClientsController(ISender sender) : ControllerBase
                 request.MaxFileSizeBytes),
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = result.Client.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
     }
 
     [HttpPatch("{id:guid}")]
@@ -84,14 +88,18 @@ public class AdminClientsController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Restablece la contraseña del cliente y se la envia por correo. La
+    /// respuesta no la incluye: el super-admin dispara el reseteo, no lo recibe.
+    /// </summary>
     [HttpPost("{id:guid}/reset-password")]
-    [ProducesResponseType<GeneratedPasswordResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GeneratedPasswordResponse>> ResetPassword(
+    public async Task<IActionResult> ResetPassword(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var password = await sender.Send(new ResetClientPasswordCommand(id), cancellationToken);
-        return Ok(new GeneratedPasswordResponse(password));
+        await sender.Send(new ResetClientPasswordCommand(id), cancellationToken);
+        return NoContent();
     }
 }
