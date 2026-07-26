@@ -13,6 +13,39 @@ anterior hecha.
   `filestore.tudominio.com`.
 - Docker y el plugin Compose instalados.
 - Puertos 80 y 443 abiertos en el firewall.
+- **Al menos 4 GB entre RAM y swap** (ver 1.1).
+- Opcional pero recomendado: una cuenta de Resend con el dominio verificado,
+  para el envio de correo (ver 5.1).
+
+### 1.1 Swap (antes del primer build)
+
+El build del frontend (`ng build`) es lo que mas memoria consume de todo el
+proceso. En un VPS de 2 GB **muere por falta de RAM**, y el sintoma engaña: el
+build se corta sin error claro, o Docker reporta que el proceso fue terminado
+(`killed`), no que falto memoria.
+
+Con menos de 4 GB de RAM, agregar swap antes de construir nada:
+
+```bash
+# 2 GB de swap. Subir a 4G si el VPS tiene 1 GB de RAM.
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+
+# Que sobreviva a un reinicio.
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+free -h   # confirmar que aparece en la fila Swap
+```
+
+Si el disco esta cifrado con LUKS (seccion 2), poner el swapfile **dentro** del
+disco cifrado: en swap acaban paginas de memoria del proceso, y ahi puede haber
+fragmentos de datos de clientes.
+
+La alternativa a todo esto es construir las imagenes en tu maquina y subirlas al
+registro, y que el VPS solo haga `pull`. Si el servidor va muy justo de memoria,
+es el camino mas sensato.
 
 ---
 
@@ -96,6 +129,43 @@ openssl rand -base64 18   # SUPERADMIN_PASSWORD
 
 El `.env` **no se commitea** (ya esta en `.gitignore`). Guardá la contraseña del
 super-admin en un gestor: se usa para el primer login y no se puede recuperar.
+El super-admin **no tiene recuperacion por correo**, a proposito: si se pierde,
+la unica salida es borrar su fila y reiniciar la API para que el seeder la vuelva
+a crear.
+
+### 5.1 Correo (Resend)
+
+```
+RESEND_API_KEY=re_...
+RESEND_FROM_ADDRESS=no-reply@tudominio.com
+RESEND_FROM_NAME=FileStore
+```
+
+El dominio del remitente tiene que estar **verificado en Resend** (seccion
+Domains, estado `Verified`), con sus registros SPF/DKIM en el DNS. La
+verificacion puede tardar horas. Una direccion de Gmail o similar no sirve:
+SPF/DKIM existen justamente para impedir enviar en nombre de un dominio ajeno.
+
+**Se puede desplegar sin esto**, y el sistema arranca con normalidad: los correos
+quedan registrados en el log en vez de enviarse. Pero hay una consecuencia que
+conviene tener clara antes de llegar al servidor:
+
+> Sin correo configurado, **no se pueden dar de alta clientes**. La contraseña
+> generada solo viaja por ese canal (no la devuelve la API ni se registra en el
+> log), asi que el alta, el reseteo y la recuperacion responden `503` con un
+> mensaje explicando que falta, en vez de crear cuentas a las que nadie podria
+> entrar. Todo lo demas funciona igual.
+
+Es decir: se puede desplegar hoy y encender el correo cuando el dominio termine
+de verificarse, pero el alta del primer cliente tiene que esperar a eso.
+
+Comprobar el envio sin salir a buscar el error a ciegas:
+
+```bash
+./scripts/setup-email-secrets.sh --test
+```
+
+Detalle completo de la integracion en `EMAIL.md`.
 
 ---
 
@@ -189,11 +259,14 @@ docker compose -f docker-compose.prod.yml exec frontend nginx -s reload
 
 ## 10. Checklist final
 
+- [ ] Swap configurado si el VPS tiene menos de 4 GB de RAM (seccion 1.1).
 - [ ] Disco de datos cifrado con LUKS.
 - [ ] Certificado TLS emitido y renovacion en cron.
 - [ ] `.env` completo, con secretos generados al azar, fuera del repo.
 - [ ] Puertos 80 y 443 abiertos; Postgres y la API **no** expuestos al host.
 - [ ] Primer deploy hecho, esquema creado, `APPLY_MIGRATIONS` de vuelta en false.
 - [ ] Login del super-admin verificado.
+- [ ] Dominio del remitente verificado en Resend y envio de prueba recibido
+      (seccion 5.1). Sin esto no se pueden dar de alta clientes.
 - [ ] Backup automatico configurado, cifrado, y una restauracion probada.
 - [ ] Contraseña del super-admin guardada en un gestor.
