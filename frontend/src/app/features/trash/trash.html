@@ -30,8 +30,11 @@
           </tr>
         } @else if (items().length === 0) {
           <tr>
-            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
-              {{ 'trash.empty' | translate }}
+            <td colspan="5" class="px-4 py-10">
+              <div class="mx-auto max-w-md text-center">
+                <p class="mb-2 font-medium text-slate-700">{{ 'trash.empty' | translate }}</p>
+                <p class="text-sm text-slate-500">{{ 'trash.emptyHint' | translate }}</p>
+              </div>
             </td>
           </tr>
         } @else {

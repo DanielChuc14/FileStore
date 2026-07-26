@@ -34,8 +34,14 @@
           </tr>
         } @else if (keys().length === 0) {
           <tr>
-            <td colspan="6" class="px-4 py-6 text-center text-slate-500">
-              {{ 'apiKeys.empty' | translate }}
+            <td colspan="6" class="px-4 py-10">
+              <div class="mx-auto max-w-md text-center">
+                <p class="mb-2 font-medium text-slate-700">{{ 'apiKeys.empty' | translate }}</p>
+                <p class="mb-4 text-sm text-slate-500">{{ 'apiKeys.emptyHint' | translate }}</p>
+                <p class="mb-2 text-xs text-slate-500">{{ 'apiKeys.emptyCheck' | translate }}</p>
+                <!-- text-left: un comando centrado es incomodo de leer y de copiar -->
+                <code class="block overflow-x-auto rounded-md bg-slate-100 px-3 py-2 text-left font-mono text-xs text-slate-700">curl -H "X-Api-Key: TU_CLAVE" {{ apiBaseUrl }}/whoami</code>
+              </div>
             </td>
           </tr>
         } @else {
@@ -177,7 +183,7 @@
           (click)="copyValue()"
           class="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         >
-          {{ 'clients.copy' | translate }}
+          {{ 'apiKeys.copy' | translate }}
         </button>
       </div>
 
@@ -192,7 +198,7 @@
           (click)="revealedValue.set(null)"
           class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
         >
-          {{ 'clients.passwordSaved' | translate }}
+          {{ 'apiKeys.valueSaved' | translate }}
         </button>
       </div>
     </div>

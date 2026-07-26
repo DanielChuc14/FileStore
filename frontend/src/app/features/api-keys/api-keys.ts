@@ -5,6 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { ApiKeyService } from '../../core/api-keys/api-key.service';
 import { ApiKey } from '../../core/api-keys/api-key.models';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-api-keys',
@@ -14,6 +15,13 @@ import { ApiKey } from '../../core/api-keys/api-key.models';
 export class ApiKeys implements OnInit {
   private readonly service = inject(ApiKeyService);
   private readonly fb = inject(FormBuilder);
+
+  /**
+   * URL absoluta de la API, para el ejemplo de curl del estado vacio.
+   * environment.apiBaseUrl es relativa (/api) porque el panel comparte origen
+   * con la API; sola no serviria en un comando fuera del navegador.
+   */
+  protected readonly apiBaseUrl = `${window.location.origin}${environment.apiBaseUrl}`;
 
   protected readonly keys = signal<ApiKey[]>([]);
   protected readonly isLoading = signal(false);

@@ -127,7 +127,8 @@
     },
     "emailSentTitle": "Credenciales enviadas",
     "emailSentBody": "Se envió la contraseña por correo a {{email}}. Nadie más la ve: si no llega, puedes resetearla para generar una nueva.",
-    "emailSentOk": "Entendido"
+    "emailSentOk": "Entendido",
+    "emptyHint": "Al dar de alta un cliente, su contraseña se le envía por correo. No se muestra aquí ni queda registrada en ningún sitio: si no le llega, usa «Resetear contraseña» para generar una nueva."
   },
   "files": {
     "title": "Archivos",
@@ -162,7 +163,8 @@
       "notAllowed": "Ese tipo de archivo no está permitido",
       "download": "No se pudo descargar el archivo",
       "unexpected": "No se pudo completar la operación"
-    }
+    },
+    "emptyHint": "Sube archivos desde el botón de arriba, o desde otra aplicación con una API Key. Puedes organizarlos en carpetas, y volver a subir un archivo con el mismo nombre crea una versión nueva en vez de reemplazarlo."
   },
   "trash": {
     "title": "Papelera",
@@ -187,7 +189,8 @@
       "load": "No se pudo cargar la papelera",
       "nameTaken": "Ya existe un archivo con ese nombre en el destino. Renombra o mueve el existente antes de restaurar.",
       "unexpected": "No se pudo completar la operación"
-    }
+    },
+    "emptyHint": "Lo que borres aparecerá aquí y podrás restaurarlo. Ten en cuenta que sigue ocupando cuota hasta que lo elimines definitivamente o se purgue solo al vencer el plazo de retención."
   },
   "apiKeys": {
     "title": "API Keys",
@@ -215,7 +218,11 @@
       "lastUsed": "Último uso",
       "status": "Estado",
       "actions": "Acciones"
-    }
+    },
+    "emptyHint": "Una API Key permite que otra aplicación use tu almacenamiento sin iniciar sesión. Al crearla, el valor completo se muestra una sola vez: guárdalo antes de cerrar el aviso. Si lo pierdes, rota la clave para obtener uno nuevo.",
+    "emptyCheck": "Para comprobar que una clave funciona:",
+    "copy": "Copiar",
+    "valueSaved": "Ya la guardé"
   },
   "profile": {
     "title": "Perfil",
