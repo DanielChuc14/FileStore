@@ -83,6 +83,8 @@ backend/
     FileStore.UnitTests/         Reglas de negocio
     FileStore.IntegrationTests/  Flujo real contra Postgres de prueba
 frontend/                    Panel Angular
+API.md                       Guía de integración para consumidores de la API
+SECRETS.md                   Configuración de secretos en desarrollo
 DEPLOYMENT.md                Guía de despliegue en VPS
 ```
 
@@ -138,6 +140,16 @@ más importante— el **aislamiento entre clientes**.
 cd frontend
 npm test                       # componentes (vitest)
 ```
+
+---
+
+## Consumir la API
+
+Guía de integración en [API.md](API.md): cómo obtener una API Key, referencia de
+todos los endpoints de contenido, límites, manejo de errores y ejemplos en C#,
+Python y Node.
+
+En desarrollo, el contrato ejecutable está en `/swagger`.
 
 ---
 
