@@ -209,10 +209,10 @@ probado a mano ya tienen tests automaticos.
   FolderTests  PurgeTests  RateLimitTests  RefreshTokenTests  AdminConfigTests
   FolderDeleteTests  ClientLifecycleTests  ApiKeyRotationTests  AuditTests
   ClientEmailTests  PasswordRecoveryTests  NotificationTests  EmailDispatcherTests
-  EmailNotConfiguredTests
+  EmailNotConfiguredTests  ClientQuotaTests  FileUpdateTests  AccountTests
   ```
 
-  **100 tests, verificados en verde en Linux (2026-07-26, 25 s).** Crecieron de
+  **126 tests, verificados en verde en Linux (2026-07-26, 32 s).** Crecieron de
   44 a 87 ese mismo dia: primero al cerrar los huecos de mayor riesgo (borrado
   recursivo de carpetas, baja de cliente con token vigente, rotacion de API Key
   y auditoria, que no tenia ni un assert), y despues con el correo transaccional
@@ -233,13 +233,9 @@ Setup de la base de tests documentado en `backend/tests/README.md`.
 - Flujo de deployment completo (Docker, Nginx, TLS): no hay tests y no se
   ejecuto nunca. Ver seccion 7.
 - Pruebas end-to-end manuales del sistema terminado, de punta a punta.
-- **Endpoints sin tocar por ningun test** (auditado el 2026-07-26; 24 de 41
-  endpoints tenian cobertura, hoy son 33). Quedan, todos de riesgo menor:
-  `POST /auth/logout`, `POST /me/change-password` (el validador si tiene tests
-  unitarios, el flujo no), `GET /whoami`, `PATCH /files/{id}`,
-  `PATCH`/`DELETE`/`reset-password` de `/admin/clients/{id}`,
-  `GET`/`PATCH /admin/allowed-types`, y los de solo lectura `/me`, `/me/stats`,
-  `/admin/clients/{id}`, `/admin/whoami`.
+- **Endpoints sin tocar por ningun test**: quedan 3 de 43 (empezo el dia en 24
+  de 41). Los tres son de solo lectura y sin logica propia: `GET /me/stats`,
+  `GET /admin/clients/{id}` y `GET /admin/whoami`.
 - Frontend: los specs cubren el pipe de bytes, login, guards e interceptor. Sin
   cobertura los cuatro servicios de `core/` y los nueve componentes de feature.
 
