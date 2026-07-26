@@ -194,34 +194,25 @@
   </div>
 }
 
-<!-- Modal de contraseña: se muestra una unica vez -->
-@if (revealedPassword(); as password) {
+<!--
+  Aviso de credenciales enviadas. Ya no se muestra ninguna contraseña aca: sale
+  por correo directo al cliente y el panel no llega a verla.
+-->
+@if (credentialsSentTo(); as email) {
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
     <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-      <h2 class="mb-2 text-lg font-semibold">{{ 'clients.passwordTitle' | translate }}</h2>
+      <h2 class="mb-2 text-lg font-semibold">{{ 'clients.emailSentTitle' | translate }}</h2>
       <p class="mb-4 text-sm text-slate-600">
-        {{ 'clients.passwordWarning' | translate: { email: revealedFor() } }}
+        {{ 'clients.emailSentBody' | translate: { email: email } }}
       </p>
-
-      <!-- font-mono para que los caracteres no se confundan al transcribir -->
-      <div class="mb-4 flex items-center gap-2 rounded-md bg-slate-100 p-3">
-        <code class="flex-1 font-mono text-sm break-all">{{ password }}</code>
-        <button
-          type="button"
-          (click)="copyPassword()"
-          class="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          {{ 'clients.copy' | translate }}
-        </button>
-      </div>
 
       <div class="flex justify-end">
         <button
           type="button"
-          (click)="dismissPassword()"
+          (click)="dismissCredentialsNotice()"
           class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
         >
-          {{ 'clients.passwordSaved' | translate }}
+          {{ 'clients.emailSentOk' | translate }}
         </button>
       </div>
     </div>

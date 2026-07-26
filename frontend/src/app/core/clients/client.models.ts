@@ -28,12 +28,6 @@ export interface CreateClientRequest {
   maxFileSizeBytes?: number | null;
 }
 
-/** La contraseña llega una unica vez, al crear o al resetear. */
-export interface CreateClientResult {
-  client: Client;
-  generatedPassword: string;
-}
-
 export interface UpdateClientRequest {
   name?: string;
   quotaBytes?: number;

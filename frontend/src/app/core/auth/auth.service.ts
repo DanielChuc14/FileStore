@@ -58,6 +58,19 @@ export class AuthService {
     );
   }
 
+  /**
+   * Pide el enlace de recuperacion. Siempre responde 204, exista o no la cuenta:
+   * la vista no puede (ni debe) distinguir los dos casos.
+   */
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/forgot-password`, { email });
+  }
+
+  /** Canjea el token del correo por una contraseña nueva. */
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/reset-password`, { token, newPassword });
+  }
+
   logout(): Observable<void> {
     return this.http
       .post<void>(`${this.baseUrl}/logout`, {}, { withCredentials: true })

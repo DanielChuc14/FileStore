@@ -26,7 +26,8 @@
       "passwordRequired": "La contraseña es obligatoria",
       "invalidCredentials": "Correo o contraseña incorrectos",
       "unexpected": "No se pudo conectar con el servidor"
-    }
+    },
+    "forgotPassword": "¿Olvidaste tu contraseña?"
   },
   "dashboard": {
     "title": "Panel",
@@ -113,10 +114,6 @@
       "sessions": "Se cerrarán todas sus sesiones abiertas",
       "data": "Sus archivos y su historial se conservan en la base de datos"
     },
-    "copy": "Copiar",
-    "passwordTitle": "Contraseña generada",
-    "passwordWarning": "Esta es la única vez que se muestra la contraseña de {{email}}. Guárdala ahora: no se puede recuperar después.",
-    "passwordSaved": "Ya la guardé",
     "columns": {
       "email": "Correo",
       "name": "Nombre",
@@ -127,7 +124,10 @@
     "errors": {
       "emailTaken": "Ese correo ya está registrado",
       "unexpected": "No se pudo completar la operación"
-    }
+    },
+    "emailSentTitle": "Credenciales enviadas",
+    "emailSentBody": "Se envió la contraseña por correo a {{email}}. Nadie más la ve: si no llega, puedes resetearla para generar una nueva.",
+    "emailSentOk": "Entendido"
   },
   "files": {
     "title": "Archivos",
@@ -254,5 +254,31 @@
     "confirm": "Confirmar",
     "close": "Cerrar",
     "search": "Buscar"
+  },
+  "forgotPassword": {
+    "title": "Recuperar acceso",
+    "subtitle": "Te enviamos un enlace para elegir una contraseña nueva.",
+    "submit": "Enviar enlace",
+    "submitting": "Enviando...",
+    "done": "Si ese correo tiene una cuenta activa, te enviamos un enlace. Revisa tu bandeja: vence en una hora.",
+    "backToLogin": "Volver al inicio de sesión"
+  },
+  "resetPassword": {
+    "title": "Elegir contraseña",
+    "subtitle": "Escribe la contraseña nueva para tu cuenta.",
+    "newPassword": "Contraseña nueva",
+    "confirmation": "Repetir contraseña",
+    "submit": "Guardar contraseña",
+    "submitting": "Guardando...",
+    "done": "Listo. Ya puedes entrar con tu contraseña nueva. Cerramos todas las sesiones que tuvieras abiertas.",
+    "goToLogin": "Ir al inicio de sesión",
+    "errors": {
+      "tooShort": "La contraseña debe tener al menos 12 caracteres",
+      "mismatch": "Las contraseñas no coinciden",
+      "missingToken": "Falta el enlace de recuperación. Ábrelo desde el correo que recibiste.",
+      "invalidToken": "Este enlace ya se usó o venció. Pide uno nuevo desde el inicio de sesión.",
+      "weakPassword": "La contraseña no cumple los requisitos mínimos",
+      "unexpected": "No se pudo completar la operación"
+    }
   }
 }

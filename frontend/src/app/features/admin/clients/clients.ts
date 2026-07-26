@@ -25,9 +25,11 @@ export class Clients implements OnInit {
   protected readonly isSaving = signal(false);
   protected readonly createError = signal<string | null>(null);
 
-  /** Contraseña recien generada. Se muestra una vez y no se puede recuperar. */
-  protected readonly revealedPassword = signal<string | null>(null);
-  protected readonly revealedFor = signal<string | null>(null);
+  /**
+   * Correo al que se acaban de enviar credenciales. Ya no se muestra ninguna
+   * contraseña en el panel: solo se confirma que salio el correo.
+   */
+  protected readonly credentialsSentTo = signal<string | null>(null);
 
   /**
    * Cliente pendiente de baja. Se usa un modal propio y no confirm() nativo:
@@ -84,11 +86,10 @@ export class Clients implements OnInit {
     const { email, name, quotaMb } = this.createForm.getRawValue();
 
     this.service.create({ email, name, quotaBytes: quotaMb * 1024 * 1024 }).subscribe({
-      next: (result) => {
+      next: (client) => {
         this.isSaving.set(false);
         this.showCreateModal.set(false);
-        this.revealedPassword.set(result.generatedPassword);
-        this.revealedFor.set(result.client.email);
+        this.credentialsSentTo.set(client.email);
         this.load();
       },
       error: (error: { status?: number }) => {
@@ -105,9 +106,8 @@ export class Clients implements OnInit {
   }
 
   protected resetPassword(client: Client): void {
-    this.service.resetPassword(client.id).subscribe((result) => {
-      this.revealedPassword.set(result.password);
-      this.revealedFor.set(client.email);
+    this.service.resetPassword(client.id).subscribe(() => {
+      this.credentialsSentTo.set(client.email);
     });
   }
 
@@ -135,15 +135,7 @@ export class Clients implements OnInit {
     });
   }
 
-  protected copyPassword(): void {
-    const password = this.revealedPassword();
-    if (password) {
-      void navigator.clipboard.writeText(password);
-    }
-  }
-
-  protected dismissPassword(): void {
-    this.revealedPassword.set(null);
-    this.revealedFor.set(null);
+  protected dismissCredentialsNotice(): void {
+    this.credentialsSentTo.set(null);
   }
 }

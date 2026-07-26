@@ -6,7 +6,6 @@ import { environment } from '../../../environments/environment';
 import {
   Client,
   CreateClientRequest,
-  CreateClientResult,
   PagedResult,
   UpdateClientRequest,
 } from './client.models';
@@ -28,8 +27,9 @@ export class ClientService {
     return this.http.get<Client>(`${this.baseUrl}/${id}`);
   }
 
-  create(request: CreateClientRequest): Observable<CreateClientResult> {
-    return this.http.post<CreateClientResult>(this.baseUrl, request);
+  /** La contraseña generada no vuelve aca: se le envia por correo al cliente. */
+  create(request: CreateClientRequest): Observable<Client> {
+    return this.http.post<Client>(this.baseUrl, request);
   }
 
   update(id: string, request: UpdateClientRequest): Observable<Client> {
@@ -40,7 +40,8 @@ export class ClientService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  resetPassword(id: string): Observable<{ password: string }> {
-    return this.http.post<{ password: string }>(`${this.baseUrl}/${id}/reset-password`, {});
+  /** Genera una contraseña nueva y se la manda por correo al cliente. */
+  resetPassword(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/reset-password`, {});
   }
 }
