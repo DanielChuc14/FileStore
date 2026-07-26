@@ -2,7 +2,8 @@
 
 > Documento de contexto para retomar el trabajo en otra sesion. Resume que se
 > hizo, que decisiones se tomaron, que falta validar y donde estan las trampas.
-> Ultima actualizacion: fin de la Fase 10.
+> Ultima actualizacion: 2026-07-25 (post-MVP: ampliacion de tests, documentacion
+> de secretos y de la API, migracion del entorno local a Linux).
 
 ---
 
@@ -14,14 +15,18 @@ JWT. Un super-admin crea clientes y configura el sistema. Almacenamiento en disc
 local del servidor, metadatos en PostgreSQL.
 
 El documento maestro de alcance es `FileStore-Definicion-Proyecto.md`.
-El plan de fases vive en `C:\Users\chucd\.claude\plans\haz-el-plan-dividido-iterative-kettle.md`.
 
 ---
 
 ## 2. Estado general
 
-**Las 10 fases del plan estan completas.** Rama de trabajo: `feature/scaffolding`
-(todo commiteado y pusheado a origin). Rama principal: `main`.
+**Las 10 fases del plan estan completas**, y despues se hizo trabajo post-MVP
+(seccion 2.1). Se trabaja directamente sobre `main`, todo commiteado y pusheado
+a origin.
+
+Las ramas `feature/scaffolding`, `test/core-flows-coverage` y
+`test/purge-coverage` estan **fusionadas en main sin commits pendientes**: son
+residuo y se pueden borrar del remoto sin perder nada.
 
 | Fase | Que | Estado |
 |---|---|---|
@@ -36,6 +41,16 @@ El plan de fases vive en `C:\Users\chucd\.claude\plans\haz-el-plan-dividido-iter
 | 8 | Perfil, cambio de contraseña, cierre del MVP | Hecha y verificada |
 | 9 | Testing (unit + integracion + Angular) | Hecha y verificada |
 | 10 | Deployment (Docker, Nginx, checklist) | Escrita, **sin verificar** (no hay Docker local) |
+
+### 2.1 Trabajo post-MVP
+
+| Que | Estado |
+|---|---|
+| Ampliacion de tests a los flujos que solo se probaban a mano (papelera, versionado, path, refresh, rate limit, purga, config admin) | Hecha, fusionada |
+| Refactor: logica de purga extraida a `ITrashPurger` para poder testearla | Hecha |
+| `SECRETS.md` + `scripts/setup-dev-secrets.sh`: setup de user-secrets desde cero | Hecha |
+| `API.md`: guia de integracion para quien consume la API | Hecha |
+| Migracion del entorno local de Windows a Fedora | Hecha |
 
 ---
 
@@ -95,35 +110,49 @@ El orden importa: arrancar la API primero, o el proxy del frontend da ECONNREFUS
 
 ### Base de datos
 
-PostgreSQL 16 nativo (NO Docker en local; la maquina tiene 8 GB). `psql` esta en
-`C:\Program Files\PostgreSQL\16\bin\psql.exe` (no en el PATH).
+Entorno actual: **Fedora Linux**. PostgreSQL 16 nativo como servicio del sistema
+(NO Docker en local), `psql` en el PATH.
 
-- Base de la app: `filestore`, rol `filestore` (no superusuario, acotado a esa base).
+```bash
+systemctl status postgresql      # el servicio corre en 127.0.0.1:5432
+```
+
+- Base de la app: `filestore`, rol `dev_user` (no superusuario).
 - Base de tests: `filestore_test`, rol `filestore_test` (password descartable
   `test_local_only`, esta en el repo a proposito porque solo accede a esa base).
+  **No existe todavia en la maquina Linux**: hay que crearla antes de correr los
+  tests de integracion. Ver `backend/tests/README.md`.
 
 ### Secretos (user-secrets, fuera del repo)
 
 La cadena de conexion, el `Jwt:Secret` y las credenciales del super-admin viven
-en user-secrets del proyecto API, NO en el repo:
+en user-secrets del proyecto API, NO en el repo. Un clon nuevo necesita
+reconfigurarlos:
 
-```
+```bash
+./scripts/setup-dev-secrets.sh              # interactivo e idempotente
 dotnet user-secrets list --project backend/FileStore.API
 ```
 
-Un clon nuevo del repo necesita reconfigurarlos. Claves: `ConnectionStrings:Default`,
-`Jwt:Secret`, `Jwt:Issuer`, `Jwt:Audience`, `SuperAdmin:Email`,
-`SuperAdmin:Password`, `SuperAdmin:Name`.
+Guia completa, incluidos los errores comunes, en **`SECRETS.md`**.
+
+Claves que lee la app: `ConnectionStrings:Default` y `Jwt:Secret`
+(obligatorias), `SuperAdmin:Email` / `SuperAdmin:Password` / `SuperAdmin:Name`
+(opcionales: sin ellas el seeder no crea el super-admin y solo deja un warning
+al arrancar). `Jwt:Issuer` y `Jwt:Audience` tienen default en `JwtSettings` y no
+hace falta configurarlas.
 
 ### Credenciales de desarrollo
 
-- **Super-admin**: email `eduardo.chuc.dev@gmail.com`. La contraseña esta en
-  user-secrets (`dotnet user-secrets list`). No se puede recuperar del hash.
-- **Cliente de prueba**: `chrome.fase6@example.com`. La contraseña se fue
-  reseteando durante las validaciones; si hace falta, resetearla desde el panel
-  del super-admin (Clientes -> Resetear contraseña) o crear un cliente nuevo.
-- Hay ~15-20 clientes basura de las verificaciones (nombres "Files A", "Iso B",
-  etc.). No molestan; se pueden limpiar si se quiere.
+- **Super-admin**: el email y la contraseña son los que se hayan configurado en
+  user-secrets (`dotnet user-secrets list`). No se pueden recuperar del hash; si
+  se pierden, borrar la fila de `SuperAdmins` y reiniciar la API para que el
+  seeder la vuelva a crear.
+- **Clientes demo**: con `Seed:Demo` activo y la base sin clientes se siembran
+  `demo-acme@filestore.local`, `demo-beta@filestore.local` y
+  `demo-gamma@filestore.local`. Contraseña comun `Demo1234!` (override con
+  `Seed:DemoPassword`). Las API Keys completas se escriben en el log al arrancar,
+  a proposito, para poder probar la API con curl.
 
 ---
 
@@ -136,8 +165,9 @@ backend/
   FileStore.Infrastructure/   EF, storage, auth, background jobs, servicios
   FileStore.API/              controllers, Program.cs, middleware
   tests/
-    FileStore.UnitTests/       67 tests de logica pura
-    FileStore.IntegrationTests/ 22 tests con API real + Postgres
+    FileStore.UnitTests/        logica pura, sin base ni red
+    FileStore.IntegrationTests/ API real + Postgres
+    README.md                   setup de la base de tests
 frontend/
   src/app/
     core/       servicios (auth, clients, api-keys, files, stats)
@@ -145,28 +175,43 @@ frontend/
     layout/     shell con menu por rol
     shared/     pipe de bytes, componente de grafica
   nginx.conf, Dockerfile
+scripts/setup-dev-secrets.sh       setup de user-secrets, idempotente
 docker-compose.prod.yml, .env.production.example, DEPLOYMENT.md
 backend/Dockerfile
 FileStore-Definicion-Proyecto.md   documento maestro
+API.md                             guia de integracion para consumidores
+SECRETS.md                         secretos en desarrollo
 ```
 
 ---
 
 ## 6. Tests: que cubren y que no
 
-101 tests en total, todos verdes.
+La cobertura crecio bastante despues del MVP: las areas que antes solo se habian
+probado a mano ya tienen tests automaticos.
 
-- **67 unitarios** (<1 s): reglas de nombres (path traversal, caracteres
+- **70 unitarios** (<1 s): reglas de nombres (path traversal, caracteres
   prohibidos, reservados de Windows), generadores de contraseña y API Key,
-  hashing, validadores de comandos, PagedResult.
-- **22 de integracion** (~8-14 s): autenticacion, **aislamiento entre clientes
-  por JWT y API Key**, upload, versionado, extension no permitida, **cuota
-  concurrente** (6 subidas en paralelo), borrado suave, descarga byte a byte.
-- **12 de Angular**: pipe de bytes, comportamiento del login (mock del servicio).
+  hashing, validadores de comandos, PagedResult. **Verificados en verde
+  (2026-07-25).**
+- **22 de Angular** (vitest, ~2 s): pipe de bytes, login, guards e interceptor de
+  auth. **Verificados en verde (2026-07-25).**
+- **De integracion**: autenticacion, **aislamiento entre clientes por JWT y API
+  Key**, upload, versionado, extension no permitida, **cuota concurrente**,
+  borrado suave, descarga byte a byte, papelera, carpetas, purga, rate limiting,
+  refresh token y config de admin. Un archivo por area:
+
+  ```
+  AuthTests  IsolationTests  FileOperationsTests  VersioningTests  TrashTests
+  FolderTests  PurgeTests  RateLimitTests  RefreshTokenTests  AdminConfigTests
+  ```
+
+  **No verificados en la maquina Linux actual**: falta crear la base
+  `filestore_test` (ver seccion 4).
 
 ### Correr los tests
 
-```
+```bash
 dotnet test backend/tests/FileStore.UnitTests           # sin preparacion
 dotnet test backend/tests/FileStore.IntegrationTests    # necesita filestore_test
 cd frontend && npm test
@@ -174,31 +219,31 @@ cd frontend && npm test
 
 Setup de la base de tests documentado en `backend/tests/README.md`.
 
-### NO cubierto por tests automaticos (verificado a mano en su fase, sin red permanente)
+### Lo que sigue sin cubrir
 
-- Job de purga de papelera (se apaga en los tests).
-- Rate limiting (429 con Retry-After).
-- Rotacion de refresh tokens y deteccion de reutilizacion.
-- Mover/renombrar carpetas con recalculo de path en la descendencia.
-- Restaurar de papelera y hard delete.
-- Endpoints de estadisticas y configuracion del admin.
+- Flujo de deployment completo (Docker, Nginx, TLS): no hay tests y no se
+  ejecuto nunca. Ver seccion 7.
+- Pruebas end-to-end manuales del sistema terminado, de punta a punta.
 
-Cobertura por lineas estimada ~40-50%. Se priorizo riesgo (aislamiento, cuota),
-no numero. Ampliar estas areas es una tarea pendiente opcional.
+Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
 
 ---
 
 ## 7. Pendiente por VALIDAR
 
 1. **Fase 10 completa (deployment)**: nunca se ejecuto `docker build` ni
-   `docker compose up` porque no hay Docker local. Hay que probarlo en el VPS.
-   Lo verificado: el `npm run build` de produccion genera `dist/frontend/browser`
-   ok, el backend compila, y los tests pasan con los cambios de produccion.
+   `docker compose up` porque no hay Docker disponible en local (en la maquina
+   Linux actual el usuario no esta en el grupo `docker`). Hay que probarlo en el
+   VPS. Lo verificado: el `npm run build` de produccion genera
+   `dist/frontend/browser` ok, el backend compila, y los tests pasan.
 2. **Swap en el VPS**: si el VPS tiene 2 GB, el `ng build` puede morir por falta
-   de RAM. Conviene agregar 2-4 GB de swap antes del primer build. NO esta
-   documentado aun en DEPLOYMENT.md (quedo pendiente de agregar).
+   de RAM. Conviene agregar 2-4 GB de swap antes del primer build. Confirmado que
+   **sigue sin estar documentado en DEPLOYMENT.md**.
 3. **Pruebas end-to-end completas** del sistema terminado: el usuario queria
    hacer una pasada final de todo junto para detectar cualquier cosa. No se hizo.
+4. **Tests de integracion en Linux**: crear la base y el rol `filestore_test`
+   (`backend/tests/README.md`) y confirmar que la suite sigue verde en este
+   entorno. Los unitarios y los de Angular ya se confirmaron.
 
 ---
 
@@ -208,10 +253,6 @@ no numero. Ampliar estas areas es una tarea pendiente opcional.
   (FileId / CurrentVersionId con NoAction). Al insertar o al hard delete hay que
   partir en dos SaveChanges dentro de una transaccion, o soltar CurrentVersionId
   antes de borrar versiones. Reaparecio en Fase 5 (upload) y Fase 6 (hard delete).
-- **PowerShell 5.1**: no tiene `Invoke-WebRequest -Form` (usar curl.exe para
-  multipart), se come las comillas internas al pasar JSON a curl (usar archivos
-  `-d @archivo.json`), y `-o $null` escribe a un archivo "null" (usar un sink real).
-  El contenedor de cookies descarta el header `Cookie` manual (usar el WebSession).
 - **Trampas de licencia**: verificar SIEMPRE la licencia antes de instalar un
   paquete. Ya cayeron MediatR, ApexCharts y FluentAssertions (todas pasaron a
   dual/comercial). Patron: "SEE LICENSE IN LICENSE" en el nuspec/npm.
@@ -243,7 +284,6 @@ Del documento maestro (seccion 15) y lo que fue surgiendo:
   gestion de claves fuera del servidor, streaming con GCM, decisiones sobre
   checksum y cuota. Descarta la deduplicacion por checksum.
 - Antivirus scan (ClamAV) — fuera del MVP.
-- Ampliar cobertura de tests de integracion a las areas manuales (seccion 6).
 - Rol de BD no-superusuario en produccion (endurecimiento, documentado como
   opcional en DEPLOYMENT.md).
 - Endurecer ForwardedHeaders con lista de proxies conocidos si el setup crece.
@@ -252,9 +292,13 @@ Del documento maestro (seccion 15) y lo que fue surgiendo:
 
 ## 10. Como retomar
 
-1. Levantar la app (seccion 4) y correr los tests (seccion 6) para confirmar que
-   todo sigue verde.
-2. Si el objetivo es desplegar: seguir `DEPLOYMENT.md` en el VPS, con el pendiente
+1. **En un clon nuevo**: correr `./scripts/setup-dev-secrets.sh` (o seguir
+   `SECRETS.md`), aplicar migraciones y levantar la app (seccion 4).
+2. Correr los tests (seccion 6) para confirmar que todo sigue verde. Si los de
+   integracion fallan por conexion, falta crear `filestore_test` (seccion 7.4).
+3. Si el objetivo es desplegar: seguir `DEPLOYMENT.md` en el VPS, con el pendiente
    del swap (seccion 7.2) en mente.
-3. Si el objetivo es cerrar el MVP con mas confianza: hacer las pruebas end-to-end
-   (seccion 7.3) y/o ampliar tests (seccion 6).
+4. Si el objetivo es cerrar el MVP con mas confianza: hacer las pruebas end-to-end
+   (seccion 7.3).
+5. Si el objetivo es integrar la API desde otra app: `API.md` tiene el flujo
+   completo, desde obtener una API Key hasta los ejemplos por lenguaje.

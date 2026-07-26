@@ -97,19 +97,19 @@ DEPLOYMENT.md                Guía de despliegue en VPS
 ### Backend
 
 ```bash
-# 1. Crear la base y aplicar migraciones
-cd backend
-dotnet ef database update --project FileStore.Infrastructure --startup-project FileStore.API
+# 1. Configurar los secretos (fuera del repo). Va primero: las migraciones
+#    necesitan la cadena de conexión. Ver SECRETS.md para el detalle.
+./scripts/setup-dev-secrets.sh
 
-# 2. Configurar los secretos (fuera del repo)
-dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=filestore;Username=postgres;Password=..." --project FileStore.API
-dotnet user-secrets set "Jwt:Secret" "$(openssl rand -base64 48)" --project FileStore.API
-dotnet user-secrets set "SuperAdmin:Email" "admin@local" --project FileStore.API
-dotnet user-secrets set "SuperAdmin:Password" "..." --project FileStore.API
+# 2. Crear el esquema
+dotnet ef database update --project backend/FileStore.Infrastructure --startup-project backend/FileStore.API
 
 # 3. Ejecutar
-dotnet run --project FileStore.API
+dotnet run --project backend/FileStore.API
 ```
+
+El script pide la conexión a Postgres y el super-admin, y genera el `Jwt:Secret`
+automáticamente. Es idempotente: no sobreescribe lo que ya exista.
 
 En desarrollo, con `Seed:Demo` activo y la base sin clientes, se siembran datos
 de demostración (clientes, API Keys, archivos con versiones y papelera); las
