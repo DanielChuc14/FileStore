@@ -15,6 +15,11 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
+
+            // El orden es el de ejecucion. La comprobacion de la cuenta va
+            // primero: a un cliente dado de baja se le responde 401 sin llegar a
+            // evaluar si su request estaba bien formado.
+            cfg.AddOpenBehavior(typeof(ClientStatusBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
