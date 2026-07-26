@@ -26,6 +26,9 @@ public class ResendEmailSender(
 {
     private readonly ResendSettings _settings = options.Value;
 
+    // Solo se registra esta implementacion cuando la configuracion esta completa.
+    public bool IsConfigured => true;
+
     private record ResendRequest(
         [property: JsonPropertyName("from")] string From,
         [property: JsonPropertyName("to")] string[] To,

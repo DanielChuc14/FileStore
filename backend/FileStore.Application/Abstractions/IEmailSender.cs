@@ -27,5 +27,12 @@ public record EmailMessage(
 /// </summary>
 public interface IEmailSender
 {
+    /// <summary>
+    /// Si hay un proveedor real detras. En falso, encolar un correo equivale a
+    /// tirarlo: quien dependa de que llegue (una contraseña generada, sobre todo)
+    /// tiene que comprobarlo ANTES de hacer el cambio, no despues.
+    /// </summary>
+    bool IsConfigured { get; }
+
     Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default);
 }

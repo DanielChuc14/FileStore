@@ -32,6 +32,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 StatusCodes.Status409Conflict,
                 conflict.Message,
                 httpContext),
+            EmailNotConfiguredException notConfigured => BuildProblem(
+                StatusCodes.Status503ServiceUnavailable,
+                notConfigured.Message,
+                httpContext),
             PayloadTooLargeException tooLarge => BuildProblem(
                 StatusCodes.Status413PayloadTooLarge,
                 tooLarge.Message,

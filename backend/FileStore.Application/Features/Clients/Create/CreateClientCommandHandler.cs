@@ -22,6 +22,14 @@ public class CreateClientCommandHandler(
         CreateClientCommand request,
         CancellationToken cancellationToken)
     {
+        // Se comprueba ANTES de tocar nada: si el correo no puede salir, la
+        // contraseña generada no llegaria a ningun lado y la cuenta naceria
+        // inaccesible. Mejor no crearla.
+        if (!emailQueue.IsDeliveryConfigured)
+        {
+            throw new EmailNotConfiguredException("dar de alta un cliente");
+        }
+
         var email = request.Email.Trim().ToLowerInvariant();
 
         // El email tambien identifica super-admins: si se repitiera, el login no

@@ -13,6 +13,8 @@ namespace FileStore.Infrastructure.Email;
 /// </summary>
 public class LoggingEmailSender(ILogger<LoggingEmailSender> logger) : IEmailSender
 {
+    public bool IsConfigured => false;
+
     public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         logger.LogWarning(

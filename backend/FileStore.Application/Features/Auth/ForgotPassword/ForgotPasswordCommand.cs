@@ -1,5 +1,6 @@
 using FileStore.Application.Abstractions;
 using FileStore.Application.Common.Emails;
+using FileStore.Application.Common.Exceptions;
 using FileStore.Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -41,6 +42,15 @@ public class ForgotPasswordCommandHandler(
 
     public async Task Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
+        // Va primero, antes incluso de mirar si la cuenta existe: la respuesta
+        // depende solo de la configuracion, igual para cualquier email, asi que
+        // no abre ninguna via para enumerar cuentas. Sin esto el usuario se
+        // quedaria esperando un correo que nunca iba a salir.
+        if (!emailQueue.IsDeliveryConfigured)
+        {
+            throw new EmailNotConfiguredException("enviar el enlace de recuperacion");
+        }
+
         var email = request.Email.Trim().ToLowerInvariant();
 
         var client = await context.Clients

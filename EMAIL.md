@@ -45,6 +45,32 @@ debería exigir una cuenta de correo.
 da falso y se sigue usando el log. Es a propósito: un remitente vacío produce
 errores en cada envío en vez de un fallo claro al arrancar.
 
+### Sin correo, tres operaciones se niegan a ejecutarse
+
+Dar de alta un cliente genera una contraseña que **solo** viaja por correo: no la
+devuelve la API y no se registra en el log. Sin envío real, esa cuenta nacería
+inaccesible para siempre, salvo escribiendo un hash a mano en la base. El reseteo
+es peor todavía, porque además destruye una contraseña que funcionaba.
+
+Por eso, mientras el correo no esté configurado, estas tres devuelven **`503`**
+con un mensaje que dice qué falta, en vez de dejar el destrozo hecho:
+
+- `POST /admin/clients`
+- `POST /admin/clients/{id}/reset-password`
+- `POST /auth/forgot-password`
+
+La comprobación de `forgot-password` va **antes** de mirar si la cuenta existe: la
+respuesta depende solo de la configuración, igual para cualquier email, así que
+no abre una vía para enumerar cuentas. Hay un test que lo fija.
+
+Todo lo demás sigue funcionando con normalidad. Crear una API Key, por ejemplo,
+manda un aviso por correo, pero ese aviso es informativo: perderlo no rompe nada
+y bloquear la operación sería pasarse.
+
+Esto importa en el despliegue: **se puede publicar con el correo apagado, pero no
+se pueden crear clientes hasta encenderlo.** El sistema ahora lo dice en vez de
+dejarte descubrirlo.
+
 El remitente **tiene que estar en el dominio verificado**. Una dirección de
 Gmail o similar no sirve: SPF/DKIM existen precisamente para impedir enviar en
 nombre de un dominio ajeno.

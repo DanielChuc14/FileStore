@@ -27,6 +27,13 @@ public class ResetClientPasswordCommandHandler(
         ResetClientPasswordCommand request,
         CancellationToken cancellationToken)
     {
+        // Peor que el alta: aqui se destruiria una contraseña que funcionaba,
+        // sin poder entregar la nueva.
+        if (!emailQueue.IsDeliveryConfigured)
+        {
+            throw new EmailNotConfiguredException("restablecer la contraseña");
+        }
+
         var client = await context.Clients
             .FirstOrDefaultAsync(c => c.Id == request.Id && !c.IsDeleted, cancellationToken)
             ?? throw new NotFoundException(nameof(Client), request.Id);

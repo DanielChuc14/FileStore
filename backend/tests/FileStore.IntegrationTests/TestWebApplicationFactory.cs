@@ -2,9 +2,11 @@ using FileStore.Application.Abstractions;
 using FileStore.Domain.Entities;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FileStore.IntegrationTests;
 
@@ -60,9 +62,51 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Cors__AllowedOrigins__0", "http://localhost:4200");
     }
 
+    /// <summary>
+    /// Sender que usa la suite. Reemplaza al que registraria el contenedor
+    /// (LoggingEmailSender, porque no hay clave de Resend) por dos motivos: no
+    /// salir nunca a la red, y poder simular que el correo NO esta configurado
+    /// para probar las guardas que lo comprueban.
+    /// </summary>
+    public sealed class ControllableEmailSender : IEmailSender
+    {
+        /// <summary>Por defecto configurado: es el estado normal de la suite.</summary>
+        public bool IsConfigured { get; set; } = true;
+
+        public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    public ControllableEmailSender EmailSender { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<IEmailSender>(EmailSender);
+        });
+    }
+
+    /// <summary>
+    /// Corre una accion como si el envio de correo no estuviera configurado, y
+    /// restaura el estado pase lo que pase. Los tests de una coleccion corren en
+    /// serie, asi que alterar la bandera un momento no afecta a los demas.
+    /// </summary>
+    public async Task WithEmailDeliveryDisabledAsync(Func<Task> action)
+    {
+        EmailSender.IsConfigured = false;
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            EmailSender.IsConfigured = true;
+        }
     }
 
     /// <summary>

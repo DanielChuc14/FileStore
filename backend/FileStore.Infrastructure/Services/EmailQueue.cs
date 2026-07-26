@@ -8,8 +8,10 @@ namespace FileStore.Infrastructure.Services;
 /// Deja el correo en la tabla de salida. No llama a SaveChanges, igual que
 /// <see cref="AuditLogger"/>: quien encola decide cuando se confirma todo junto.
 /// </summary>
-public class EmailQueue(IApplicationDbContext context) : IEmailQueue
+public class EmailQueue(IApplicationDbContext context, IEmailSender sender) : IEmailQueue
 {
+    public bool IsDeliveryConfigured => sender.IsConfigured;
+
     public void Enqueue(EmailMessage message, Guid? clientId = null)
     {
         context.EmailOutbox.Add(new EmailOutboxMessage

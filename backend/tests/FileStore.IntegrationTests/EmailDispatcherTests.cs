@@ -28,6 +28,7 @@ public class EmailDispatcherTests(IntegrationTestFixture fixture)
     /// <summary>Sender controlable: cuenta envios y falla cuando se le pide.</summary>
     private sealed class FakeEmailSender : IEmailSender
     {
+        public bool IsConfigured => true;
         public bool ShouldFail { get; set; }
         public List<EmailMessage> Sent { get; } = [];
 

@@ -10,5 +10,12 @@ namespace FileStore.Application.Abstractions;
 /// </summary>
 public interface IEmailQueue
 {
+    /// <summary>
+    /// Si lo que se encole va a poder entregarse. Lo consultan las operaciones
+    /// cuyo unico canal de salida es el correo: generar una contraseña que nadie
+    /// va a recibir deja una cuenta inaccesible para siempre.
+    /// </summary>
+    bool IsDeliveryConfigured { get; }
+
     void Enqueue(EmailMessage message, Guid? clientId = null);
 }
