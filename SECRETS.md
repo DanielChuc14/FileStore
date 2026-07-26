@@ -78,7 +78,33 @@ dotnet user-secrets set "SuperAdmin:Password" "<una_password>" --project backend
 dotnet user-secrets set "SuperAdmin:Name" "Super Admin" --project backend/FileStore.API
 ```
 
-### 4. Verificar
+### 4. Correo con Resend (opcional)
+
+Sin esto el backend arranca igual: los correos no se envían, se registran en el
+log con un warning. Sirve para desarrollar sin cuenta de Resend.
+
+Lo más cómodo es el script dedicado, que además valida y prueba el envío:
+
+```bash
+./scripts/setup-email-secrets.sh
+```
+
+A mano:
+
+```bash
+dotnet user-secrets set "Resend:ApiKey" "re_..." --project backend/FileStore.API
+dotnet user-secrets set "Resend:FromAddress" "no-reply@tudominio.com" --project backend/FileStore.API
+```
+
+El dominio del remitente **tiene que estar verificado en Resend** (registros
+SPF/DKIM en tu DNS) o la API rechaza cada envío. `Resend:FromName` y
+`App:PanelUrl` tienen default y solo hace falta tocarlas si quieres otro nombre
+visible u otra URL de panel.
+
+Ojo: hacen falta **las dos** claves. Con solo una configurada, la app considera
+que el correo no está listo y sigue usando el registro en log.
+
+### 5. Verificar
 
 ```bash
 dotnet user-secrets list --project backend/FileStore.API
@@ -91,7 +117,7 @@ Jwt:Secret = ...
 ConnectionStrings:Default = Host=localhost;Port=5432;Database=filestore;Username=...;Password=...
 ```
 
-### 5. Correr el backend
+### 6. Correr el backend
 
 ```bash
 dotnet run --project backend/FileStore.API

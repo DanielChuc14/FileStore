@@ -1,0 +1,149 @@
+# Correo transaccional (Resend)
+
+Guía de la integración de correo: qué se envía, cómo está montado y qué falta
+para activarlo.
+
+---
+
+## Estado: montado, sin enviar todavía
+
+Todo el código está en su sitio y probado. **No sale ni un correo real** hasta
+que se configuren `Resend:ApiKey` y `Resend:FromAddress`. Sin ellas, la app
+arranca igual y cada envío se registra en el log con un warning
+(`LoggingEmailSender`). Eso es deliberado: ni desarrollar ni correr los tests
+debería exigir una cuenta de correo.
+
+### Para activarlo
+
+1. Verificar el dominio en Resend (**Domains** → estado `Verified`). Mientras
+   diga `Pending` o `Checking DNS`, faltan los registros SPF/DKIM y ningún envío
+   va a salir.
+2. Configurar las claves. En local, con el script:
+
+   ```bash
+   ./scripts/setup-email-secrets.sh
+   ```
+
+   Pregunta la clave, el remitente y la URL del panel, y al final ofrece
+   **enviar un correo de prueba** para confirmar que todo funciona de punta a
+   punta. Si el envío falla, traduce el error de Resend a su causa real (clave
+   revocada, dominio sin verificar, clave sin permiso de envío). Es idempotente:
+   `--force` sobreescribe, `--test` solo prueba lo ya configurado.
+
+   A mano es equivalente a:
+
+   ```bash
+   dotnet user-secrets set "Resend:ApiKey" "re_..." --project backend/FileStore.API
+   dotnet user-secrets set "Resend:FromAddress" "no-reply@tudominio.com" --project backend/FileStore.API
+   ```
+
+   En producción son `RESEND_API_KEY` y `RESEND_FROM_ADDRESS` en el `.env`.
+3. Reiniciar la API. En el log de arranque ya no debería aparecer el warning de
+   envío omitido.
+
+**Hacen falta las dos.** Con solo una configurada, `ResendSettings.IsConfigured`
+da falso y se sigue usando el log. Es a propósito: un remitente vacío produce
+errores en cada envío en vez de un fallo claro al arrancar.
+
+El remitente **tiene que estar en el dominio verificado**. Una dirección de
+Gmail o similar no sirve: SPF/DKIM existen precisamente para impedir enviar en
+nombre de un dominio ajeno.
+
+---
+
+## Qué se envía
+
+| Cuándo | Plantilla | Contenido |
+|---|---|---|
+| Alta de cliente | `Welcome` | Usuario y contraseña generada |
+| Reseteo por el super-admin | `PasswordReset` | Contraseña nueva |
+| Solicitud de recuperación | `PasswordResetLink` | Enlace de un solo uso, vence en 1 h |
+| Cuota al 80% / 95% | `QuotaAlert` | Consumo actual y aviso |
+| Reuso de refresh token | `SuspiciousSessionActivity` | Sesiones cerradas por seguridad |
+| API Key creada o rotada | `ApiKeyActivity` | Nombre y prefijo de la key |
+
+Las plantillas son funciones puras en
+`FileStore.Application/Common/Emails/EmailTemplates.cs`. Todo dato que venga del
+usuario pasa por `HtmlEncode`.
+
+---
+
+## Cómo está montado
+
+```
+Handler  --IEmailQueue.Enqueue()-->  tabla EmailOutbox
+                                          |
+                          EmailDispatchService (cada 60 s)
+                                          |
+                              IEmailSender --> API de Resend
+```
+
+Tres decisiones que conviene no deshacer:
+
+**Encolar es parte de la transacción.** `IEmailQueue.Enqueue()` no llama a
+`SaveChanges`, igual que `IAuditLogger.Record()`. La fila del correo se confirma
+junto al cambio que lo motiva, así que un alta que termina en rollback no deja
+un correo listo para salir con la contraseña de una cuenta que no existe. Hay un
+test que lo fija (`ClientEmailTests.AltaFallida_NoDejaCorreoEncolado`).
+
+**El cuerpo se borra al entregar.** Estos correos llevan contraseñas y enlaces de
+un solo uso; conservarlos convertiría `EmailOutbox` en un archivo de credenciales
+en claro. Al enviarse, `HtmlBody` y `TextBody` se vacían y queda la fila como
+rastro. Los senders tampoco registran el cuerpo en el log.
+
+**El despachador asume una sola instancia de la API.** Es el despliegue previsto
+(un VPS con docker compose). Con varias instancias haría falta tomar las filas
+con `SELECT ... FOR UPDATE SKIP LOCKED`, o dos despachadores enviarían el mismo
+correo dos veces.
+
+### Reintentos
+
+Espera creciente entre intentos (2, 4, 8, 16 min) y se rinde a los 5, marcando
+la fila como `Failed` con el motivo en `LastError`. Consultar los atascados:
+
+```sql
+SELECT "Recipient", "Subject", "Attempts", "LastError"
+FROM "EmailOutbox" WHERE "Status" = 3;
+```
+
+---
+
+## Configuración
+
+| Clave | Default | Para qué |
+|---|---|---|
+| `Resend:ApiKey` | — | Clave de la API. Sin ella no se envía nada |
+| `Resend:FromAddress` | — | Remitente, en el dominio verificado |
+| `Resend:FromName` | `FileStore` | Nombre visible |
+| `Resend:TimeoutSeconds` | `10` | Corte de la llamada a la API |
+| `App:PanelUrl` | `http://localhost:4200` | Raíz a la que enlazan los correos |
+| `EmailDispatch:Enabled` | `true` | Apagar el despachador |
+| `EmailDispatch:IntervalSeconds` | `60` | Frecuencia de entrega |
+| `EmailDispatch:BatchSize` | `20` | Correos por ciclo |
+| `EmailDispatch:MaxAttempts` | `5` | Intentos antes de rendirse |
+| `QuotaAlerts:Enabled` | `true` | Apagar los avisos de cuota |
+| `QuotaAlerts:IntervalMinutes` | `60` | Frecuencia de revisión |
+
+En los tests, `Resend:ApiKey` se fija vacío y los dos jobs se apagan de forma
+explícita: la suite nunca sale a la red y los avisos de cuota se disparan a mano
+con `IQuotaAlerter`.
+
+---
+
+## Recuperación de contraseña
+
+`POST /auth/forgot-password` → correo con enlace → `POST /auth/reset-password`.
+
+Propiedades que sostienen los tests de `PasswordRecoveryTests`:
+
+- **No se puede enumerar cuentas**: siempre responde `204`, exista o no el email.
+  La vista del panel muestra el mismo acuse incluso si la petición falla.
+- **Un solo uso**: canjear marca `UsedAt`; repetir da `401`.
+- **Pedir otro enlace invalida el anterior**, para que no queden varias llaves
+  vivas rondando por el correo.
+- **Vence en una hora**.
+- **Canjear cierra todas las sesiones**, sin excepciones. A diferencia del cambio
+  desde el perfil, aquí no hay una sesión actual que valga la pena conservar.
+- **Solo clientes.** El super-admin no tiene recuperación por correo: su cuenta
+  se resiembra desde los secretos del servidor, y un endpoint público capaz de
+  resetear al administrador sería un blanco demasiado goloso.

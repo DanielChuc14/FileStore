@@ -63,7 +63,15 @@ flowchart LR
 ```
 
 1. **El super-admin da de alta tu cuenta de cliente** (`POST /admin/clients`).
-   La respuesta incluye una contraseña generada que se muestra una única vez.
+   La contraseña generada te llega **por correo, directo a ti**: no aparece en la
+   respuesta de la API ni la ve quien administra el servicio. Si no llega, se
+   puede pedir un reseteo (`POST /admin/clients/{id}/reset-password`), que genera
+   una nueva y la envía por el mismo canal.
+
+   Si olvidás la contraseña más adelante, podés recuperarla vos mismo desde el
+   panel (`¿Olvidaste tu contraseña?`) o con `POST /auth/forgot-password`. Llega
+   un enlace de un solo uso que vence en una hora. El endpoint responde `204`
+   siempre, exista o no la cuenta.
 
 2. **Iniciás sesión** con ese email y contraseña:
 

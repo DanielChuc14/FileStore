@@ -28,6 +28,10 @@ moderno**, con foco en seguridad y aislamiento de datos.
 - **Rate limiting** por API Key y por IP en los endpoints de credenciales.
 - **Auditoría**: cada acción mutante queda registrada con actor, recurso e IP.
 - **Panel de super-admin**: alta de clientes, configuración global, dashboards.
+- **Correo transaccional** (Resend): credenciales de alta, recuperación
+  autoservicio de contraseña, avisos de cuota al 80/95% y alertas de seguridad.
+  Salen por una tabla de salida que se confirma en la misma transacción que el
+  cambio que los motiva. Ver `EMAIL.md`.
 - **i18n** desde la primera vista.
 
 ---
@@ -84,6 +88,7 @@ backend/
     FileStore.IntegrationTests/  Flujo real contra Postgres de prueba
 frontend/                    Panel Angular
 API.md                       Guía de integración para consumidores de la API
+EMAIL.md                     Correo transaccional: qué se envía y cómo activarlo
 SECRETS.md                   Configuración de secretos en desarrollo
 DEPLOYMENT.md                Guía de despliegue en VPS
 ```

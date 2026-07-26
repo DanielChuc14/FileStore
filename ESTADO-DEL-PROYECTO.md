@@ -51,6 +51,8 @@ residuo y se pueden borrar del remoto sin perder nada.
 | `SECRETS.md` + `scripts/setup-dev-secrets.sh`: setup de user-secrets desde cero | Hecha |
 | `API.md`: guia de integracion para quien consume la API | Hecha |
 | Migracion del entorno local de Windows a Fedora | Hecha |
+| Cierre de huecos de test Tier 1 + 2 bugs encontrados (2026-07-26) | Hecha |
+| Correo transaccional con Resend: outbox, 6 plantillas, recuperacion autoservicio, avisos de cuota y alertas de seguridad | Hecha, **sin enviar** (falta verificar el dominio) |
 
 ---
 
@@ -120,8 +122,9 @@ systemctl status postgresql      # el servicio corre en 127.0.0.1:5432
 - Base de la app: `filestore`, rol `dev_user` (no superusuario).
 - Base de tests: `filestore_test`, rol `filestore_test` (password descartable
   `test_local_only`, esta en el repo a proposito porque solo accede a esa base).
-  **No existe todavia en la maquina Linux**: hay que crearla antes de correr los
-  tests de integracion. Ver `backend/tests/README.md`.
+  **Ya creada en la maquina Linux (2026-07-26)** y con el esquema migrado. Ver
+  `backend/tests/README.md`. Ojo al recrearla: `dev_user` tiene `CREATEDB` pero
+  no `CREATEROLE`, asi que el `CREATE ROLE` necesita el superusuario `postgres`.
 
 ### Secretos (user-secrets, fuera del repo)
 
@@ -204,10 +207,15 @@ probado a mano ya tienen tests automaticos.
   ```
   AuthTests  IsolationTests  FileOperationsTests  VersioningTests  TrashTests
   FolderTests  PurgeTests  RateLimitTests  RefreshTokenTests  AdminConfigTests
+  FolderDeleteTests  ClientLifecycleTests  ApiKeyRotationTests  AuditTests
+  ClientEmailTests  PasswordRecoveryTests  NotificationTests
   ```
 
-  **No verificados en la maquina Linux actual**: falta crear la base
-  `filestore_test` (ver seccion 4).
+  **87 tests, verificados en verde en Linux (2026-07-26, 23 s).** Crecieron de
+  44 a 87 ese mismo dia: primero al cerrar los huecos de mayor riesgo (borrado
+  recursivo de carpetas, baja de cliente con token vigente, rotacion de API Key
+  y auditoria, que no tenia ni un assert), y despues con el correo transaccional
+  (credenciales por email, recuperacion autoservicio y avisos automaticos).
 
 ### Correr los tests
 
@@ -224,6 +232,15 @@ Setup de la base de tests documentado en `backend/tests/README.md`.
 - Flujo de deployment completo (Docker, Nginx, TLS): no hay tests y no se
   ejecuto nunca. Ver seccion 7.
 - Pruebas end-to-end manuales del sistema terminado, de punta a punta.
+- **Endpoints sin tocar por ningun test** (auditado el 2026-07-26; 24 de 41
+  endpoints tenian cobertura, hoy son 33). Quedan, todos de riesgo menor:
+  `POST /auth/logout`, `POST /me/change-password` (el validador si tiene tests
+  unitarios, el flujo no), `GET /whoami`, `PATCH /files/{id}`,
+  `PATCH`/`DELETE`/`reset-password` de `/admin/clients/{id}`,
+  `GET`/`PATCH /admin/allowed-types`, y los de solo lectura `/me`, `/me/stats`,
+  `/admin/clients/{id}`, `/admin/whoami`.
+- Frontend: los specs cubren el pipe de bytes, login, guards e interceptor. Sin
+  cobertura los cuatro servicios de `core/` y los nueve componentes de feature.
 
 Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
 
@@ -241,9 +258,10 @@ Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
    **sigue sin estar documentado en DEPLOYMENT.md**.
 3. **Pruebas end-to-end completas** del sistema terminado: el usuario queria
    hacer una pasada final de todo junto para detectar cualquier cosa. No se hizo.
-4. **Tests de integracion en Linux**: crear la base y el rol `filestore_test`
-   (`backend/tests/README.md`) y confirmar que la suite sigue verde en este
-   entorno. Los unitarios y los de Angular ya se confirmaron.
+
+Resuelto el 2026-07-26: los tests de integracion en Linux. Se creo la base y el
+rol `filestore_test` y la suite completa (44) quedo en verde junto con los 70
+unitarios.
 
 ---
 
@@ -256,6 +274,20 @@ Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
 - **Trampas de licencia**: verificar SIEMPRE la licencia antes de instalar un
   paquete. Ya cayeron MediatR, ApexCharts y FluentAssertions (todas pasaron a
   dual/comercial). Patron: "SEE LICENSE IN LICENSE" en el nuspec/npm.
+- **Chequeos de seguridad repartidos por handler se olvidan**. La validacion de
+  "cliente activo y no dado de baja" estaba solo en Upload, GetProfile y
+  ChangePassword: los demas handlers no la hacian, asi que un cliente dado de
+  baja seguia listando y descargando con su access token hasta que expirara (15
+  min). El canal de API Key nunca tuvo el problema porque lo valida al
+  autenticar, en UN solo sitio. Se resolvio igual: `ClientStatusBehavior` en el
+  pipeline de MediatR. Si aparece otro chequeo transversal, va ahi, no en cada
+  handler. Ojo tambien con el razonamiento que lo tapaba: revocar refresh tokens
+  NO invalida un access token ya emitido, solo impide renovarlo.
+- **ActorType.ApiKey no se escribia nunca**: `AuditLogger` decidia el actor
+  mirando `UserType`, y el esquema de API Key no emite ese claim, asi que toda
+  accion de una integracion se auditaba como `Client`. El canal se decide por
+  `ApiKeyId`, no por `UserType`. Leccion general: un valor de enum que ningun
+  test ejercita puede llevar meses muerto sin que nada falle.
 - **Interceptor de 401 en Angular**: no todo 401 es sesion vencida. El cambio de
   contraseña devuelve 401 por "contraseña actual incorrecta" y NO debe disparar
   el refresh ni desloguear. Los endpoints que validan credenciales se excluyen.
@@ -275,11 +307,32 @@ Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
 
 ---
 
+## 8.1 Correo transaccional
+
+Montado el 2026-07-26 y documentado en **`EMAIL.md`**: outbox transaccional,
+despachador con reintentos, seis plantillas, recuperacion autoservicio de
+contraseña, avisos de cuota al 80/95% y alertas de seguridad.
+
+**No sale ni un correo todavia.** Falta que el dominio quede verificado en
+Resend (estaba en "checking DNS") y configurar `Resend:ApiKey` y
+`Resend:FromAddress`. Sin las dos claves la app usa `LoggingEmailSender` y solo
+registra en el log. El checklist de activacion esta en `EMAIL.md`.
+
+Cambio incompatible que trajo: **el alta de cliente ya no devuelve la contraseña
+generada** (`POST /admin/clients` responde un ClientDto, y `reset-password`
+responde 204). Va por correo directo al cliente. Antes el super-admin tenia que
+hacersela llegar por un canal externo, normalmente un chat, y ese era el eslabon
+mas debil de todo el sistema de credenciales.
+
+---
+
 ## 9. Decisiones abiertas / roadmap
 
 Del documento maestro (seccion 15) y lo que fue surgiendo:
 
-- Notificaciones por email (SMTP) — fuera del MVP.
+- ~~Notificaciones por email~~ — **hecho** con Resend (ver seccion 8.1 y `EMAIL.md`).
+  Lo que queda pendiente ahi: el dominio verificado, y decidir si el super-admin
+  deberia tener recuperacion por correo (hoy no la tiene, a proposito).
 - Cifrado a nivel de aplicacion (AES-256-GCM por archivo) — roadmap; requiere
   gestion de claves fuera del servidor, streaming con GCM, decisiones sobre
   checksum y cuota. Descarta la deduplicacion por checksum.
@@ -295,7 +348,7 @@ Del documento maestro (seccion 15) y lo que fue surgiendo:
 1. **En un clon nuevo**: correr `./scripts/setup-dev-secrets.sh` (o seguir
    `SECRETS.md`), aplicar migraciones y levantar la app (seccion 4).
 2. Correr los tests (seccion 6) para confirmar que todo sigue verde. Si los de
-   integracion fallan por conexion, falta crear `filestore_test` (seccion 7.4).
+   integracion fallan por conexion, revisar que exista `filestore_test` (seccion 4).
 3. Si el objetivo es desplegar: seguir `DEPLOYMENT.md` en el VPS, con el pendiente
    del swap (seccion 7.2) en mente.
 4. Si el objetivo es cerrar el MVP con mas confianza: hacer las pruebas end-to-end

@@ -72,6 +72,20 @@ set_secret "SuperAdmin:Password" "$admin_password"
 set_secret "SuperAdmin:Name" "$admin_name"
 
 echo
+echo "== Correo (Resend) =="
+echo "Opcional. Sin esto los correos no se envian: quedan registrados en el log."
+resend_key="$(prompt_secret "API key de Resend (vacio = omitir)")"
+if [[ -n "$resend_key" ]]; then
+  # El remitente es tan obligatorio como la clave: con una sola de las dos, la
+  # app considera que el correo no esta configurado y sigue usando el log.
+  resend_from="$(prompt "Remitente (dominio verificado en Resend)" "no-reply@localhost")"
+  set_secret "Resend:ApiKey" "$resend_key"
+  set_secret "Resend:FromAddress" "$resend_from"
+else
+  echo "  Omitido."
+fi
+
+echo
 echo "Listo. Secretos actuales:"
 dotnet user-secrets list --project "$API_PROJECT"
 echo
