@@ -3,6 +3,7 @@ using System;
 using FileStore.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FileStore.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(FileStoreDbContext))]
-    partial class FileStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726222027_SuperAdminPasswordRecovery")]
+    partial class SuperAdminPasswordRecovery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

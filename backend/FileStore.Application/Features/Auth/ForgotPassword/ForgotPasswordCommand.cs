@@ -2,6 +2,7 @@ using FileStore.Application.Abstractions;
 using FileStore.Application.Common.Emails;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Domain.Entities;
+using FileStore.Domain.Enums;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,10 @@ namespace FileStore.Application.Features.Auth.ForgotPassword;
 /// <summary>
 /// Pide un enlace de recuperacion. No devuelve nada y NUNCA falla por email
 /// desconocido: responder distinto segun exista o no la cuenta convertiria este
-/// endpoint en un enumerador de clientes registrados.
+/// endpoint en un enumerador de cuentas registradas.
+///
+/// Sirve a clientes y al super-admin. Para este ultimo es la unica via de
+/// recuperacion que no pasa por tocar la base a mano.
 /// </summary>
 public record ForgotPasswordCommand(string Email, string? IpAddress) : IRequest;
 
@@ -53,12 +57,9 @@ public class ForgotPasswordCommandHandler(
 
         var email = request.Email.Trim().ToLowerInvariant();
 
-        var client = await context.Clients
-            .FirstOrDefaultAsync(
-                c => c.Email == email && !c.IsDeleted && c.IsActive,
-                cancellationToken);
+        var account = await ResolveAccountAsync(email, cancellationToken);
 
-        if (client is null)
+        if (account is null)
         {
             // Se registra para poder investigar un patron de sondeo, pero la
             // respuesta al cliente HTTP es identica al caso exitoso.
@@ -68,10 +69,12 @@ public class ForgotPasswordCommandHandler(
             return;
         }
 
+        var (userId, userType, name) = account.Value;
+
         // Los pendientes se invalidan: pedir un enlace nuevo tiene que dejar sin
         // efecto los anteriores, o cada solicitud sumaria una llave viva mas.
         var pending = await context.PasswordResetTokens
-            .Where(t => t.ClientId == client.Id && t.UsedAt == null)
+            .Where(t => t.UserId == userId && t.UserType == userType && t.UsedAt == null)
             .ToListAsync(cancellationToken);
 
         var now = DateTime.UtcNow;
@@ -86,7 +89,8 @@ public class ForgotPasswordCommandHandler(
         context.PasswordResetTokens.Add(new PasswordResetToken
         {
             Id = Guid.CreateVersion7(),
-            ClientId = client.Id,
+            UserId = userId,
+            UserType = userType,
             TokenHash = tokenHash,
             ExpiresAt = now.Add(Lifetime),
             CreatedAt = now,
@@ -95,12 +99,42 @@ public class ForgotPasswordCommandHandler(
 
         emailQueue.Enqueue(
             EmailTemplates.PasswordResetLink(
-                client.Email,
-                client.Name,
+                email,
+                name,
                 urls.BuildPasswordResetUrl(token),
                 (int)Lifetime.TotalMinutes),
-            client.Id);
+            // Solo se asocia a un cliente cuando lo es: el super-admin no tiene
+            // ClientId, y esa columna del outbox es de trazabilidad, no una FK.
+            userType == UserType.Client ? userId : null);
 
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Resuelve el email contra las dos tablas de cuentas. El orden no puede
+    /// producir ambiguedad: el alta de clientes rechaza un email que ya exista
+    /// como super-admin, justamente para que el login sepa contra que tabla
+    /// resolver.
+    /// </summary>
+    private async Task<(Guid Id, UserType Type, string Name)?> ResolveAccountAsync(
+        string email,
+        CancellationToken cancellationToken)
+    {
+        var admin = await context.SuperAdmins
+            .Where(a => a.Email == email && a.IsActive)
+            .Select(a => new { a.Id, a.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (admin is not null)
+        {
+            return (admin.Id, UserType.SuperAdmin, admin.Name);
+        }
+
+        var client = await context.Clients
+            .Where(c => c.Email == email && !c.IsDeleted && c.IsActive)
+            .Select(c => new { c.Id, c.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return client is null ? null : (client.Id, UserType.Client, client.Name);
     }
 }

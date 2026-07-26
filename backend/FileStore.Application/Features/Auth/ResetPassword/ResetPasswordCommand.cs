@@ -1,5 +1,6 @@
 using FileStore.Application.Abstractions;
 using FileStore.Application.Common.Exceptions;
+using FileStore.Domain.Entities;
 using FileStore.Domain.Enums;
 using FluentValidation;
 using MediatR;
@@ -37,7 +38,6 @@ public class ResetPasswordCommandHandler(
         var hash = tokenGenerator.Hash(request.Token);
 
         var reset = await context.PasswordResetTokens
-            .Include(t => t.Client)
             .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
 
         // Token inexistente, ya canjeado o vencido: la misma respuesta para los
@@ -48,17 +48,19 @@ public class ResetPasswordCommandHandler(
             throw new InvalidCredentialsException("El enlace no es valido o ya vencio.");
         }
 
-        var client = reset.Client;
+        var now = DateTime.UtcNow;
+        var newHash = passwordHasher.Hash(request.NewPassword);
 
-        if (client.IsDeleted || !client.IsActive)
+        var applied = reset.UserType == UserType.SuperAdmin
+            ? await ApplyToSuperAdminAsync(reset.UserId, newHash, now, cancellationToken)
+            : await ApplyToClientAsync(reset.UserId, newHash, now, cancellationToken);
+
+        if (!applied)
         {
+            // La cuenta se dio de baja o se bloqueo entre que se pidio el enlace
+            // y se canjeo.
             throw new InvalidCredentialsException("El enlace no es valido o ya vencio.");
         }
-
-        var now = DateTime.UtcNow;
-
-        client.PasswordHash = passwordHasher.Hash(request.NewPassword);
-        client.UpdatedAt = now;
 
         // Un solo uso. Se marca antes de guardar para que dos canjes simultaneos
         // del mismo token no puedan pasar ambos.
@@ -68,8 +70,8 @@ public class ResetPasswordCommandHandler(
         // la cuenta: se cierran TODAS las sesiones, sin excepciones. Aqui no hay
         // una sesion actual que conservar, a diferencia del cambio desde perfil.
         var sessions = await context.RefreshTokens
-            .Where(t => t.UserId == client.Id
-                && t.UserType == UserType.Client
+            .Where(t => t.UserId == reset.UserId
+                && t.UserType == reset.UserType
                 && t.RevokedAt == null)
             .ToListAsync(cancellationToken);
 
@@ -80,11 +82,60 @@ public class ResetPasswordCommandHandler(
 
         auditLogger.Record(
             AuditAction.ChangePassword,
-            clientId: client.Id,
-            resourceType: nameof(Domain.Entities.Client),
-            resourceId: client.Id,
-            metadata: new { SelfService = true, RevokedSessions = sessions.Count });
+            // El super-admin no es dueño de ningun contenido: su recuperacion no
+            // pertenece al audit log de ningun cliente.
+            clientId: reset.UserType == UserType.Client ? reset.UserId : null,
+            resourceType: reset.UserType == UserType.Client
+                ? nameof(Client)
+                : nameof(SuperAdmin),
+            resourceId: reset.UserId,
+            metadata: new
+            {
+                SelfService = true,
+                Account = reset.UserType.ToString(),
+                RevokedSessions = sessions.Count
+            });
 
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<bool> ApplyToClientAsync(
+        Guid clientId,
+        string passwordHash,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var client = await context.Clients
+            .FirstOrDefaultAsync(
+                c => c.Id == clientId && !c.IsDeleted && c.IsActive,
+                cancellationToken);
+
+        if (client is null)
+        {
+            return false;
+        }
+
+        client.PasswordHash = passwordHash;
+        client.UpdatedAt = now;
+        return true;
+    }
+
+    private async Task<bool> ApplyToSuperAdminAsync(
+        Guid adminId,
+        string passwordHash,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var admin = await context.SuperAdmins
+            .FirstOrDefaultAsync(a => a.Id == adminId && a.IsActive, cancellationToken);
+
+        if (admin is null)
+        {
+            return false;
+        }
+
+        admin.PasswordHash = passwordHash;
+        admin.UpdatedAt = now;
+        return true;
     }
 }

@@ -212,7 +212,7 @@ probado a mano ya tienen tests automaticos.
   EmailNotConfiguredTests  ClientQuotaTests  FileUpdateTests  AccountTests
   ```
 
-  **126 tests, verificados en verde en Linux (2026-07-26, 32 s).** Crecieron de
+  **128 tests, verificados en verde en Linux (2026-07-26, 33 s).** Crecieron de
   44 a 87 ese mismo dia: primero al cerrar los huecos de mayor riesgo (borrado
   recursivo de carpetas, baja de cliente con token vigente, rotacion de API Key
   y auditoria, que no tenia ni un assert), y despues con el correo transaccional
@@ -328,8 +328,8 @@ mas debil de todo el sistema de credenciales.
 Del documento maestro (seccion 15) y lo que fue surgiendo:
 
 - ~~Notificaciones por email~~ — **hecho** con Resend (ver seccion 8.1 y `EMAIL.md`).
-  Lo que queda pendiente ahi: el dominio verificado, y decidir si el super-admin
-  deberia tener recuperacion por correo (hoy no la tiene, a proposito).
+  El dominio quedo verificado y el envio confirmado de punta a punta. El
+  super-admin tambien tiene recuperacion por correo desde el 2026-07-26.
 - Cifrado a nivel de aplicacion (AES-256-GCM por archivo) — roadmap; requiere
   gestion de claves fuera del servidor, streaming con GCM, decisiones sobre
   checksum y cuota. Descarta la deduplicacion por checksum.

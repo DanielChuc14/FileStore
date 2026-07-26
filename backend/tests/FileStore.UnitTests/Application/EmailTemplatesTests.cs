@@ -42,7 +42,9 @@ public class EmailTemplatesTests
     [MemberData(nameof(TodasLasPlantillas))]
     public void TodaPlantilla_EsUnDocumentoCompleto(string nombre, EmailMessage message)
     {
-        Assert.StartsWith("<!doctype html>", message.HtmlBody, StringComparison.OrdinalIgnoreCase);
+        Assert.True(
+            message.HtmlBody.StartsWith("<!doctype html>", StringComparison.OrdinalIgnoreCase),
+            $"{nombre}: el cuerpo no es un documento completo.");
         Assert.Contains("<html lang=\"es\">", message.HtmlBody);
         Assert.Contains("</html>", message.HtmlBody);
     }
@@ -54,7 +56,9 @@ public class EmailTemplatesTests
         // La mayoria de los clientes bloquea las imagenes remotas por defecto, asi
         // que un logo enlazado se veria como un hueco roto. Ademas, una peticion a
         // un servidor externo al abrir el correo es un pixel de rastreo de facto.
-        Assert.DoesNotContain("<img", message.HtmlBody, StringComparison.OrdinalIgnoreCase);
+        Assert.False(
+            message.HtmlBody.Contains("<img", StringComparison.OrdinalIgnoreCase),
+            $"{nombre}: usa una imagen, que la mayoria de los clientes bloquea.");
         Assert.DoesNotContain("src=\"http", message.HtmlBody, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("@import", message.HtmlBody, StringComparison.OrdinalIgnoreCase);
     }

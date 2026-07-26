@@ -206,6 +206,9 @@ Propiedades que sostienen los tests de `PasswordRecoveryTests`:
 - **Vence en una hora**.
 - **Canjear cierra todas las sesiones**, sin excepciones. A diferencia del cambio
   desde el perfil, aquí no hay una sesión actual que valga la pena conservar.
-- **Solo clientes.** El super-admin no tiene recuperación por correo: su cuenta
-  se resiembra desde los secretos del servidor, y un endpoint público capaz de
-  resetear al administrador sería un blanco demasiado goloso.
+- **Sirve también al super-admin.** Es su única vía de recuperación que no pasa
+  por tocar la base a mano. El token identifica a su dueño con `UserId` +
+  `UserType`, así que el enlace de una cuenta no puede cambiar la contraseña de
+  otra. Lo que protege esa puerta es el conjunto: límite de 10 peticiones por
+  minuto y por IP, token de un solo uso que vence en una hora, y la necesidad de
+  tener acceso al buzón del administrador.

@@ -129,9 +129,10 @@ openssl rand -base64 18   # SUPERADMIN_PASSWORD
 
 El `.env` **no se commitea** (ya esta en `.gitignore`). Guardá la contraseña del
 super-admin en un gestor: se usa para el primer login y no se puede recuperar.
-El super-admin **no tiene recuperacion por correo**, a proposito: si se pierde,
-la unica salida es borrar su fila y reiniciar la API para que el seeder la vuelva
-a crear.
+Si se pierde, el super-admin puede recuperarla desde el panel con
+"¿Olvidaste tu contraseña?", siempre que el correo este configurado (seccion
+5.1). Sin correo, la unica salida sigue siendo borrar su fila y reiniciar la API
+para que el seeder la vuelva a crear.
 
 ### 5.1 Correo (Resend)
 

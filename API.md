@@ -451,6 +451,7 @@ Los errores de validación agregan un diccionario `errors`:
 | `413` | Supera el tamaño máximo o no entra en la cuota. | Liberar espacio (vaciar papelera) o pedir más cuota. |
 | `429` | Se superó el rate limit. | Esperar lo que indique `Retry-After`. |
 | `500` | Error inesperado. | Reintentar con backoff. El detalle queda en el log del servidor, nunca en la respuesta. |
+| `503` | La operación necesita enviar un correo y el servidor no tiene configurado el envío. Solo afecta al alta de clientes, al reseteo de contraseña y a la recuperación. | Avisar a quien administra el servicio. Ninguna operación sobre archivos, carpetas o papelera devuelve `503`. |
 
 Nunca vas a recibir stack traces ni mensajes internos: se registran del lado
 del servidor pero no se envían, porque filtran estructura interna.
@@ -612,7 +613,13 @@ integración servidor-a-servidor.
 |---|---|---|
 | `POST` | `/auth/login` | `{"email":…,"password":…}` → access token + cookie de refresh. |
 | `POST` | `/auth/refresh` | No lleva cuerpo: usa la cookie `fs_refresh`. |
-| `POST` | `/auth/logout` | Revoca el refresh token y borra la cookie. |
+| `POST` | `/auth/logout` | Revoca el refresh token y borra la cookie. Es idempotente: sin cookie también responde `204`. |
+| `POST` | `/auth/forgot-password` | `{"email":…}` → envía un enlace de recuperación. **Siempre responde `204`**, exista o no la cuenta: distinguirlo permitiría enumerar cuentas registradas. |
+| `POST` | `/auth/reset-password` | `{"token":…,"newPassword":…}` → canjea el enlace. El token sirve **una sola vez**, vence en 1 h, y canjearlo **cierra todas las sesiones abiertas**. |
+
+Los cuatro endpoints de `/auth` comparten un límite de **10 peticiones por
+minuto y por IP**, independiente del límite por API Key. Es lo que frena la
+fuerza bruta contra el login y el sondeo de tokens de recuperación.
 
 Cómo está diseñada la sesión:
 
@@ -623,7 +630,8 @@ Cómo está diseñada la sesión:
   `HttpOnly` + `Secure` + `SameSite=Strict`: JavaScript no puede leerlo, así
   que un XSS no roba la sesión, y un sitio externo no puede disparar el refresh.
 - El refresh **rota** el token y **detecta reuso**: presentar uno ya usado
-  invalida la cadena entera.
+  invalida la cadena entera y le envía un aviso de seguridad al dueño de la
+  cuenta.
 - No hay tolerancia de reloj: un token de 15 minutos vive exactamente 15
   minutos.
 

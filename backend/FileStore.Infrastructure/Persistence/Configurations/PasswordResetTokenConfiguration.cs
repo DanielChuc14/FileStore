@@ -18,13 +18,10 @@ public class PasswordResetTokenConfiguration : IEntityTypeConfiguration<Password
         // El canje resuelve el token por su hash, y tiene que ser unico.
         builder.HasIndex(t => t.TokenHash).IsUnique();
 
-        // Al emitir uno nuevo se invalidan los pendientes del mismo cliente.
-        builder.HasIndex(t => t.ClientId);
-
-        builder.HasOne(t => t.Client)
-            .WithMany()
-            .HasForeignKey(t => t.ClientId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Al emitir uno nuevo se invalidan los pendientes del mismo usuario.
+        // Sin FK: UserId apunta a Clients o a SuperAdmins segun UserType, igual
+        // que en RefreshToken.
+        builder.HasIndex(t => new { t.UserId, t.UserType });
 
         builder.Ignore(t => t.IsUsable);
     }
