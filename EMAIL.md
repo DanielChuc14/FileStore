@@ -89,8 +89,36 @@ nombre de un dominio ajeno.
 | API Key creada o rotada | `ApiKeyActivity` | Nombre y prefijo de la key |
 
 Las plantillas son funciones puras en
-`FileStore.Application/Common/Emails/EmailTemplates.cs`. Todo dato que venga del
-usuario pasa por `HtmlEncode`.
+`FileStore.Application/Common/Emails/EmailTemplates.cs`, sobre la maquetación
+compartida de `EmailLayout.cs`. Todo dato que venga del usuario pasa por
+`HtmlEncode`: el nombre del cliente lo elige quien lo da de alta y el correo lo
+lee otra persona.
+
+### Por qué el HTML parece anticuado
+
+El HTML de correo no es HTML web. Outlook renderiza con el motor de Word, y casi
+todos los clientes ignoran las hojas de estilo externas, flexbox y grid. De ahí
+las decisiones que parecen de 2005 y no lo son:
+
+- **Tablas para la estructura**, con `role="presentation"` para que los lectores
+  de pantalla no las anuncien como tablas de datos.
+- **Estilos en línea**: es lo único que respetan todos los clientes.
+- **600 px de ancho**, el estándar que entra sin scroll horizontal.
+- **Botones a prueba de balas**: una celda con `bgcolor` y el enlace con padding
+  dentro. Outlook ignora el padding de un `<a>` suelto, así que un botón hecho
+  solo con CSS le sale como texto plano.
+- **Sin imágenes remotas**: la mayoría de los clientes las bloquea, así que un
+  logo enlazado se vería como un hueco roto — y una petición externa al abrir el
+  correo es un píxel de rastreo de facto. La marca es texto.
+- **`color-scheme: light`**: sin esto varios clientes invierten los colores por
+  su cuenta en modo oscuro, con resultados impredecibles. Es preferible un correo
+  claro y consistente que uno oscuro y roto.
+- **Preheader**: el texto de vista previa del buzón. Sin él, el cliente muestra
+  las primeras palabras que encuentre, que suelen ser "Hola Fulano".
+
+`EmailTemplatesTests` fija lo que un rediseño podría romper en silencio: que el
+nombre vaya escapado, que exista la versión en texto plano y que no haya
+recursos remotos.
 
 ---
 

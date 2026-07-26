@@ -1,5 +1,6 @@
 using System.Net;
 using FileStore.Application.Abstractions;
+using static FileStore.Application.Common.Emails.EmailLayout;
 
 namespace FileStore.Application.Common.Emails;
 
@@ -8,65 +9,73 @@ namespace FileStore.Application.Common.Emails;
 ///
 /// Son funciones puras que devuelven el mensaje ya armado: sin motor de
 /// plantillas ni dependencias, porque son pocas y cortas. Si algun dia crecen o
-/// hay que traducirlas, el punto de cambio es este y nada mas.
+/// hay que traducirlas, el punto de cambio es este y nada mas. La maquetacion
+/// compartida vive en <see cref="EmailLayout"/>.
 ///
-/// Todo dato que venga del usuario (nombre del cliente, sobre todo) pasa por
+/// Todo dato que venga del usuario (el nombre del cliente, sobre todo) pasa por
 /// HtmlEncode: un cliente llamado &lt;script&gt; no puede inyectar nada en el
 /// correo que recibe otra persona.
+///
+/// Cada plantilla devuelve tambien una version en texto plano. No es un adorno:
+/// sin ella los filtros anti-spam penalizan el mensaje, y algunos clientes solo
+/// muestran esa parte.
 /// </summary>
 public static class EmailTemplates
 {
     public static EmailMessage Welcome(string to, string name, string password, string panelUrl)
     {
-        var safeName = WebUtility.HtmlEncode(name);
+        const string subject = "Tu cuenta de FileStore esta lista";
 
-        var html = Layout(
-            "Tu cuenta de FileStore esta lista",
+        var html = Wrap(
+            subject,
+            "Estas son tus credenciales de acceso.",
+            "Te damos la bienvenida",
             $"""
-             <p>Hola {safeName},</p>
-             <p>Se creo tu cuenta en FileStore. Estas son tus credenciales de acceso:</p>
-             <p style="margin:24px 0">
-               <strong>Usuario:</strong> {WebUtility.HtmlEncode(to)}<br>
-               <strong>Contrase&ntilde;a:</strong> <code>{WebUtility.HtmlEncode(password)}</code>
-             </p>
-             <p>Entra en <a href="{panelUrl}">{panelUrl}</a> y cambiala en cuanto puedas.</p>
-             <p>Si no esperabas este correo, ignoralo y avisa a quien administra el servicio.</p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph("Se creo tu cuenta en FileStore. Con estas credenciales puedes entrar al panel:")}
+             {CredentialBox("Usuario", Encode(to))}
+             {CredentialBox("Contrase&ntilde;a", Encode(password))}
+             {Button(panelUrl, "Entrar al panel")}
+             {Notice("Cambia la contrase&ntilde;a en cuanto entres. Esta es la unica vez que se te envia.")}
+             {Muted("Si no esperabas este correo, ignoralo y avisa a quien administra el servicio.")}
              """);
 
         var text = $"""
             Hola {name},
 
-            Se creo tu cuenta en FileStore.
+            Se creo tu cuenta en FileStore. Estas son tus credenciales:
 
             Usuario: {to}
             Contrasena: {password}
 
-            Entra en {panelUrl} y cambiala en cuanto puedas.
+            Entra en {panelUrl} y cambiala en cuanto puedas. Esta es la unica vez
+            que se te envia.
 
             Si no esperabas este correo, ignoralo y avisa a quien administra el servicio.
             """;
 
-        return new EmailMessage(to, "Tu cuenta de FileStore esta lista", html, text);
+        return new EmailMessage(to, subject, html, text);
     }
 
     public static EmailMessage PasswordReset(string to, string name, string password, string panelUrl)
     {
-        var safeName = WebUtility.HtmlEncode(name);
+        const string subject = "Se restablecio tu contrasena de FileStore";
 
-        var html = Layout(
+        var html = Wrap(
+            subject,
+            "Tu nueva contrase&ntilde;a y el aviso de que cerramos tus sesiones.",
             "Se restablecio tu contrase&ntilde;a",
             $"""
-             <p>Hola {safeName},</p>
-             <p>Quien administra el servicio restablecio tu contrase&ntilde;a. La nueva es:</p>
-             <p style="margin:24px 0"><code>{WebUtility.HtmlEncode(password)}</code></p>
-             <p>Entra en <a href="{panelUrl}">{panelUrl}</a> y cambiala en cuanto puedas.
-                Todas tus sesiones abiertas se cerraron.</p>
-             <p>Si no pediste este cambio, avisa cuanto antes: puede indicar que
-                alguien accedio a tu cuenta.</p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph("Quien administra el servicio restablecio tu contrase&ntilde;a. La nueva es:")}
+             {CredentialBox("Contrase&ntilde;a", Encode(password))}
+             {Button(panelUrl, "Entrar al panel")}
+             {Notice("Todas tus sesiones abiertas se cerraron. Cambia la contrase&ntilde;a en cuanto entres.")}
+             {Muted("<strong>Si no pediste este cambio</strong>, avisa cuanto antes: puede indicar que alguien accedio a tu cuenta.")}
              """);
 
-        // Se etiqueta igual que en el correo de alta: mismo formato en los dos
-        // sitios donde viaja una contraseña.
+        // El formato "Contrasena: X" es el mismo que en el correo de alta, para
+        // que los dos sitios donde viaja una credencial se lean igual.
         var text = $"""
             Hola {name},
 
@@ -80,7 +89,7 @@ public static class EmailTemplates
             Si no pediste este cambio, avisa cuanto antes.
             """;
 
-        return new EmailMessage(to, "Se restablecio tu contrasena de FileStore", html, text);
+        return new EmailMessage(to, subject, html, text);
     }
 
     public static EmailMessage PasswordResetLink(
@@ -89,25 +98,18 @@ public static class EmailTemplates
         string resetUrl,
         int minutesValid)
     {
-        var safeName = WebUtility.HtmlEncode(name);
+        const string subject = "Recupera tu contrasena de FileStore";
 
-        var html = Layout(
+        var html = Wrap(
+            subject,
+            $"Enlace de un solo uso, valido durante {minutesValid} minutos.",
             "Recupera tu contrase&ntilde;a",
             $"""
-             <p>Hola {safeName},</p>
-             <p>Pediste recuperar el acceso a tu cuenta de FileStore. Este enlace
-                sirve <strong>una sola vez</strong> y vence en {minutesValid} minutos:</p>
-             <p style="margin:24px 0">
-               <a href="{resetUrl}"
-                  style="display:inline-block;background:#0f172a;color:#fff;
-                         padding:10px 18px;border-radius:6px;text-decoration:none">
-                 Elegir una contrase&ntilde;a nueva
-               </a>
-             </p>
-             <p style="font-size:13px;color:#6b7280">Si el boton no funciona, copia esta direccion:<br>
-                <span style="word-break:break-all">{resetUrl}</span></p>
-             <p><strong>Si no pediste esto</strong>, ignora el correo: tu contrase&ntilde;a
-                sigue igual y el enlace vence solo.</p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph($"Pediste recuperar el acceso a tu cuenta. Este enlace sirve <strong>una sola vez</strong> y vence en {minutesValid} minutos:")}
+             {Button(resetUrl, "Elegir una contrase&ntilde;a nueva")}
+             {Muted($"Si el boton no funciona, copia esta direccion en tu navegador:<br><span style=\"word-break:break-all;color:#64748b;\">{resetUrl}</span>")}
+             {Notice("<strong>Si no pediste esto</strong>, ignora el correo: tu contrase&ntilde;a sigue igual y el enlace vence solo.")}
              """);
 
         var text = $"""
@@ -122,7 +124,7 @@ public static class EmailTemplates
             enlace vence solo.
             """;
 
-        return new EmailMessage(to, "Recupera tu contrasena de FileStore", html, text);
+        return new EmailMessage(to, subject, html, text);
     }
 
     public static EmailMessage QuotaAlert(
@@ -133,30 +135,32 @@ public static class EmailTemplates
         long quotaBytes,
         string panelUrl)
     {
-        var safeName = WebUtility.HtmlEncode(name);
+        var subject = $"FileStore: tu espacio esta al {percent}%";
+
         var used = FormatBytes(usedBytes);
         var quota = FormatBytes(quotaBytes);
 
         // Al 95% el mensaje cambia de tono: ya no es informativo, es inminente.
         var critical = percent >= 95;
+
         var heading = critical
             ? "Tu espacio esta por agotarse"
-            : "Tu espacio esta al " + percent + "%";
+            : $"Tu espacio esta al {percent}%";
 
         var advice = critical
             ? "Cuando se llene, las subidas empezaran a fallar."
             : "Todavia tienes margen, pero conviene que lo revises.";
 
-        var html = Layout(
+        var html = Wrap(
+            subject,
+            $"Estas usando {used} de {quota}.",
             heading,
             $"""
-             <p>Hola {safeName},</p>
-             <p>Estas usando <strong>{used}</strong> de <strong>{quota}</strong>
-                ({percent}%). {advice}</p>
-             <p>Recuerda que la papelera y las versiones antiguas <strong>tambien
-                ocupan cuota</strong>: vaciar la papelera desde el panel suele
-                liberar bastante.</p>
-             <p><a href="{panelUrl}">Ir al panel</a></p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph($"Estas usando <strong>{used}</strong> de <strong>{quota}</strong> ({percent}%). {advice}")}
+             {ProgressBar(percent, critical)}
+             {Notice("La papelera y las versiones antiguas <strong>tambien ocupan cuota</strong>. Vaciar la papelera desde el panel suele liberar bastante.")}
+             {Button(panelUrl, "Revisar mi espacio")}
              """);
 
         var text = $"""
@@ -170,24 +174,23 @@ public static class EmailTemplates
             {panelUrl}
             """;
 
-        return new EmailMessage(to, $"FileStore: tu espacio esta al {percent}%", html, text);
+        return new EmailMessage(to, subject, html, text);
     }
 
     public static EmailMessage SuspiciousSessionActivity(string to, string name, string panelUrl)
     {
-        var safeName = WebUtility.HtmlEncode(name);
+        const string subject = "FileStore: cerramos tus sesiones por seguridad";
 
-        var html = Layout(
+        var html = Wrap(
+            subject,
+            "Detectamos el reuso de una credencial de sesion ya rotada.",
             "Cerramos tus sesiones por seguridad",
             $"""
-             <p>Hola {safeName},</p>
-             <p>Detectamos un intento de reutilizar una credencial de sesion que ya
-                habia sido rotada. Suele significar que alguien copio la sesion de
-                tu navegador.</p>
-             <p>Por precaucion <strong>cerramos todas tus sesiones abiertas</strong>.
-                Vuelve a entrar en <a href="{panelUrl}">el panel</a> con normalidad.</p>
-             <p>Si no reconoces esta actividad, cambia tu contrase&ntilde;a en cuanto
-                entres y revisa tus API Keys.</p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph("Detectamos un intento de reutilizar una credencial de sesion que ya habia sido rotada. Suele significar que alguien copio la sesion de tu navegador.")}
+             {Paragraph("Por precaucion <strong>cerramos todas tus sesiones abiertas</strong>. Puedes volver a entrar con normalidad.")}
+             {Button(panelUrl, "Entrar al panel")}
+             {Notice("Si no reconoces esta actividad, cambia tu contrase&ntilde;a en cuanto entres y revisa tus API Keys.")}
              """);
 
         var text = $"""
@@ -202,7 +205,7 @@ public static class EmailTemplates
             y revisa tus API Keys.
             """;
 
-        return new EmailMessage(to, "FileStore: cerramos tus sesiones por seguridad", html, text);
+        return new EmailMessage(to, subject, html, text);
     }
 
     public static EmailMessage ApiKeyActivity(
@@ -213,19 +216,19 @@ public static class EmailTemplates
         bool rotated,
         string panelUrl)
     {
-        var safeName = WebUtility.HtmlEncode(name);
-        var safeKey = WebUtility.HtmlEncode(keyName);
         var action = rotated ? "roto" : "creado";
+        var subject = $"FileStore: se ha {action} una API Key";
 
-        var html = Layout(
+        var html = Wrap(
+            subject,
+            $"La API Key \"{Encode(keyName)}\" se ha {action} en tu cuenta.",
             $"Se ha {action} una API Key",
             $"""
-             <p>Hola {safeName},</p>
-             <p>Se {action} la API Key <strong>{safeKey}</strong>
-                (<code>{WebUtility.HtmlEncode(prefix)}</code>) en tu cuenta.</p>
-             <p>Si fuiste tu, no hay nada que hacer. Si no, entra al
-                <a href="{panelUrl}">panel</a> y revocala cuanto antes: una API Key
-                da acceso completo a tus archivos.</p>
+             {Paragraph($"Hola {Encode(name)},")}
+             {Paragraph($"Se {action} una API Key en tu cuenta:")}
+             {CredentialBox(Encode(keyName), Encode(prefix))}
+             {Notice("Si no fuiste tu, entra al panel y revocala cuanto antes: una API Key da acceso completo a tus archivos.")}
+             {Button(panelUrl, "Revisar mis API Keys")}
              """);
 
         var text = $"""
@@ -239,7 +242,30 @@ public static class EmailTemplates
             {panelUrl}
             """;
 
-        return new EmailMessage(to, $"FileStore: se ha {action} una API Key", html, text);
+        return new EmailMessage(to, subject, html, text);
+    }
+
+    private static string Encode(string value) => WebUtility.HtmlEncode(value);
+
+    /// <summary>
+    /// Barra de consumo. Se dibuja con dos celdas de tabla y no con un div de
+    /// ancho porcentual porque Outlook no respeta los porcentajes en divs.
+    /// </summary>
+    private static string ProgressBar(int percent, bool critical)
+    {
+        var filled = Math.Clamp(percent, 0, 100);
+        var color = critical ? "#dc2626" : "#f59e0b";
+
+        return $"""
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="margin:20px 0;background-color:#e2e8f0;border-radius:5px;height:10px;">
+              <tr>
+                <td width="{filled}%" style="background-color:{color};border-radius:5px;
+                                             height:10px;font-size:0;line-height:0;">&nbsp;</td>
+                <td style="font-size:0;line-height:0;">&nbsp;</td>
+              </tr>
+            </table>
+            """;
     }
 
     /// <summary>
@@ -260,21 +286,4 @@ public static class EmailTemplates
 
         return $"{value:0.#} {units[unit]}";
     }
-
-    /// <summary>
-    /// Envoltura comun. Estilos en linea y tabla de una celda: los clientes de
-    /// correo ignoran las hojas de estilo y buena parte del CSS moderno.
-    /// </summary>
-    private static string Layout(string heading, string body) =>
-        $"""
-         <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-                     font-size:15px;line-height:1.6;color:#1f2937;max-width:520px">
-           <h1 style="font-size:18px;margin:0 0 16px">{heading}</h1>
-           {body}
-           <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
-           <p style="font-size:13px;color:#6b7280">
-             FileStore &middot; Este es un mensaje automatico, no respondas a esta direccion.
-           </p>
-         </div>
-         """;
 }
