@@ -197,8 +197,10 @@ probado a mano ya tienen tests automaticos.
   prohibidos, reservados de Windows), generadores de contraseña y API Key,
   hashing, validadores de comandos, PagedResult. **Verificados en verde
   (2026-07-25).**
-- **22 de Angular** (vitest, ~2 s): pipe de bytes, login, guards e interceptor de
-  auth. **Verificados en verde (2026-07-25).**
+- **52 de Angular** (vitest, ~3 s): pipe de bytes, login, guards, interceptor,
+  auth.service, las dos vistas de recuperacion, el alta de clientes, y un
+  guardian que verifica que toda clave `| translate` exista en `es.json`.
+  **Verificados en verde (2026-07-27).**
 - **De integracion**: autenticacion, **aislamiento entre clientes por JWT y API
   Key**, upload, versionado, extension no permitida, **cuota concurrente**,
   borrado suave, descarga byte a byte, papelera, carpetas, purga, rate limiting,
@@ -212,7 +214,8 @@ probado a mano ya tienen tests automaticos.
   EmailNotConfiguredTests  ClientQuotaTests  FileUpdateTests  AccountTests
   ```
 
-  **128 tests, verificados en verde en Linux (2026-07-26, 33 s).** Crecieron de
+  **136 tests, verificados en verde en Linux (2026-07-27, 34 s). Los 43 endpoints
+  de la API tienen al menos un test que los ejerce.** Crecieron de
   44 a 87 ese mismo dia: primero al cerrar los huecos de mayor riesgo (borrado
   recursivo de carpetas, baja de cliente con token vigente, rotacion de API Key
   y auditoria, que no tenia ni un assert), y despues con el correo transaccional
@@ -233,11 +236,11 @@ Setup de la base de tests documentado en `backend/tests/README.md`.
 - Flujo de deployment completo (Docker, Nginx, TLS): no hay tests y no se
   ejecuto nunca. Ver seccion 7.
 - Pruebas end-to-end manuales del sistema terminado, de punta a punta.
-- **Endpoints sin tocar por ningun test**: quedan 3 de 43 (empezo el dia en 24
-  de 41). Los tres son de solo lectura y sin logica propia: `GET /me/stats`,
-  `GET /admin/clients/{id}` y `GET /admin/whoami`.
-- Frontend: los specs cubren el pipe de bytes, login, guards e interceptor. Sin
-  cobertura los cuatro servicios de `core/` y los nueve componentes de feature.
+- ~~Endpoints sin tocar por ningun test~~: **ninguno**. Los 43 estan cubiertos.
+- Frontend: sin cobertura siguen los servicios de archivos, api-keys, clientes y
+  stats, y los componentes de archivos, papelera, api-keys, auditoria, perfil,
+  dashboard y las vistas de admin. Son de riesgo menor: listados y formularios
+  sin reglas propias.
 
 Se priorizo riesgo (aislamiento, cuota, credenciales) sobre numero de lineas.
 
