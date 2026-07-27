@@ -21,7 +21,7 @@ public class RateLimitTests(IntegrationTestFixture fixture)
     private async Task<string> CreateApiKeyAsync(string jwt, int rateLimitPerMinute)
     {
         using var client = fixture.AuthenticatedClient(jwt);
-        var response = await client.PostAsJsonAsync("/me/api-keys",
+        var response = await client.PostAsJsonAsync("/v1/me/api-keys",
             new { name = "rate-limit-test", rateLimitPerMinute });
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<CreateKeyResult>();
@@ -42,12 +42,12 @@ public class RateLimitTests(IntegrationTestFixture fixture)
         // conteo de la ventana sea determinista.
         for (var i = 0; i < limit; i++)
         {
-            var ok = await client.GetAsync("/files");
+            var ok = await client.GetAsync("/v1/files");
             Assert.NotEqual(HttpStatusCode.TooManyRequests, ok.StatusCode);
         }
 
         // La siguiente supera el limite: 429 con Retry-After.
-        var rejected = await client.GetAsync("/files");
+        var rejected = await client.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
         Assert.True(rejected.Headers.Contains("Retry-After"),
             "La respuesta 429 debe incluir el header Retry-After.");
@@ -67,14 +67,14 @@ public class RateLimitTests(IntegrationTestFixture fixture)
         using var clientA = fixture.ApiKeyClient(keyA);
         for (var i = 0; i < limit; i++)
         {
-            await clientA.GetAsync("/files");
+            await clientA.GetAsync("/v1/files");
         }
-        var aRejected = await clientA.GetAsync("/files");
+        var aRejected = await clientA.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.TooManyRequests, aRejected.StatusCode);
 
         // keyB sigue con su cuota intacta.
         using var clientB = fixture.ApiKeyClient(keyB);
-        var bResponse = await clientB.GetAsync("/files");
+        var bResponse = await clientB.GetAsync("/v1/files");
         Assert.NotEqual(HttpStatusCode.TooManyRequests, bResponse.StatusCode);
     }
 }

@@ -1,3 +1,4 @@
+using FileStore.API.Infrastructure;
 using FileStore.Application.Common;
 using FileStore.Application.Features.Trash;
 using MediatR;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FileStore.API.Controllers;
 
 [ApiController]
-[Route("trash")]
+[Route(ApiRoutes.V1 + "/trash")]
 [Authorize(Policy = AuthPolicies.ClientContent)]
 public class TrashController(ISender sender) : ControllerBase
 {

@@ -37,7 +37,7 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
     private static async Task<HttpResponseMessage> UploadAsync(HttpClient client, string name, int size = FileSize)
     {
         using var form = FileForm(name, size);
-        return await client.PostAsync("/files", form);
+        return await client.PostAsync("/v1/files", form);
     }
 
     private async Task<ClientDto> SetQuotaAsync(Guid clientId, long quotaBytes)
@@ -45,7 +45,7 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var response = await admin.PatchAsJsonAsync($"/admin/clients/{clientId}", new { quotaBytes });
+        var response = await admin.PatchAsJsonAsync($"/v1/admin/clients/{clientId}", new { quotaBytes });
         response.EnsureSuccessStatusCode();
 
         return (await response.Content.ReadFromJsonAsync<ClientDto>())!;
@@ -99,10 +99,10 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
 
         // Recortar la cuota no es una via para borrar datos ajenos: el archivo
         // sigue en el listado y se sigue pudiendo descargar.
-        var listado = await client.GetFromJsonAsync<PagedFiles>("/files");
+        var listado = await client.GetFromJsonAsync<PagedFiles>("/v1/files");
         Assert.Contains(listado!.Items, f => f.Id == file!.Id);
 
-        var download = await client.GetAsync($"/files/{file!.Id}");
+        var download = await client.GetAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.OK, download.StatusCode);
     }
 
@@ -119,7 +119,7 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
         // El endpoint informa el estado real, sin recortar el numero para que
         // cuadre. Quien pinte la barra en el panel tiene que contar con que el
         // porcentaje pase del 100%.
-        var usage = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var usage = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
 
         Assert.True(usage!.UsedBytes > usage.QuotaBytes);
         Assert.Equal(100, usage.QuotaBytes);
@@ -142,7 +142,7 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
             (await UploadAsync(client, "no-entra.txt")).StatusCode);
 
         // Mandarlo a la papelera NO libera cuota: sigue ocupando hasta purgarse.
-        var delete = await client.DeleteAsync($"/files/{file!.Id}");
+        var delete = await client.DeleteAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
         Assert.Equal(
@@ -150,7 +150,7 @@ public class ClientQuotaTests(IntegrationTestFixture fixture)
             (await UploadAsync(client, "sigue-sin-entrar.txt")).StatusCode);
 
         // El borrado definitivo si la libera, y recien ahi vuelve a caber algo.
-        var hardDelete = await client.DeleteAsync($"/trash/{file.Id}");
+        var hardDelete = await client.DeleteAsync($"/v1/trash/{file.Id}");
         Assert.Equal(HttpStatusCode.NoContent, hardDelete.StatusCode);
 
         var ahoraSi = await UploadAsync(client, "ahora-si.txt");

@@ -68,6 +68,17 @@ residuo y se pueden borrar del remoto sin perder nada.
 
 ### Decisiones que conviene recordar
 
+- **La API va versionada bajo `/v1`** (2026-07-27), con la version en la ruta y
+  no en una cabecera. El prefijo se declara en `ApiRoutes.V1` y cada controller
+  lo concatena, para que la version viva en un solo sitio sin ocultar la ruta.
+  `/health` queda fuera: es infraestructura, no contrato. Se hizo ANTES de tener
+  consumidores externos a proposito: es un cambio incompatible que hoy sale
+  gratis (el unico consumidor era el panel) y que despues ya no.
+- **Hay CI en GitHub Actions** (`.github/workflows/ci.yml`): compila con
+  `-warnaserror` y corre las tres suites en cada push y PR, con un PostgreSQL 16
+  real como servicio. No despliega nada: automatizar un despliegue que nunca se
+  ha ejecutado a mano seria la peor secuencia posible.
+
 - **MediatR fijado en 12.5.0**: las versiones 13+ pasaron a licencia RPL 1.5
   (copeleft de red) o comercial. 12.5.0 es la ultima Apache-2.0. NO actualizar.
 - **ApexCharts y FluentAssertions descartadas** por el mismo motivo (licencia

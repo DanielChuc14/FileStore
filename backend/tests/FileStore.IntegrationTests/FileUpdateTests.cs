@@ -26,7 +26,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
         using var form = new MultipartFormDataContent();
         form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("contenido")), "file", name);
 
-        var url = folderId is null ? "/files" : $"/files?folderId={folderId}";
+        var url = folderId is null ? "/v1/files" : $"/v1/files?folderId={folderId}";
         var response = await client.PostAsync(url, form);
         response.EnsureSuccessStatusCode();
 
@@ -35,7 +35,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
     private static async Task<FolderDto> CreateFolderAsync(HttpClient client, string name)
     {
-        var response = await client.PostAsJsonAsync("/folders", new { name, parentId = (Guid?)null });
+        var response = await client.PostAsJsonAsync("/v1/folders", new { name, parentId = (Guid?)null });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<FolderDto>())!;
     }
@@ -53,7 +53,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
         using var client = await NewClientAsync();
         var file = await UploadAsync(client, "informe.txt");
 
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "informe-final.csv" });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "informe-final.csv" });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var updated = (await response.Content.ReadFromJsonAsync<FileDto>())!;
@@ -74,10 +74,10 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         // Es el agujero evidente si nadie lo comprueba: la subida valida la
         // whitelist, y renombrar seria la puerta de atras para saltarsela.
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "malicioso.exe" });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "malicioso.exe" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var sinCambios = await client.GetFromJsonAsync<FileDto>($"/files/{file.Id}/metadata");
+        var sinCambios = await client.GetFromJsonAsync<FileDto>($"/v1/files/{file.Id}/metadata");
         Assert.Equal("informe.txt", sinCambios!.OriginalName);
     }
 
@@ -87,7 +87,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
         using var client = await NewClientAsync();
         var file = await UploadAsync(client, "informe.txt");
 
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "../../etc/passwd" });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "../../etc/passwd" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -100,7 +100,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         // Dos archivos con el mismo nombre en la misma carpeta romperian la
         // regla que hace que re-subir genere una version en vez de un duplicado.
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "ocupado.txt" });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "ocupado.txt" });
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
@@ -113,7 +113,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         Assert.Null(file.FolderId);
 
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { folderId = destino.Id });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { folderId = destino.Id });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var updated = (await response.Content.ReadFromJsonAsync<FileDto>())!;
@@ -129,11 +129,11 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         // folderId null sin el flag significa "no mover", no "mover a la raiz":
         // con un solo campo nullable los dos casos serian indistinguibles.
-        var sinFlag = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "renombrado.txt" });
+        var sinFlag = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "renombrado.txt" });
         sinFlag.EnsureSuccessStatusCode();
         Assert.Equal(carpeta.Id, (await sinFlag.Content.ReadFromJsonAsync<FileDto>())!.FolderId);
 
-        var conFlag = await client.PatchAsJsonAsync($"/files/{file.Id}", new { moveToRoot = true });
+        var conFlag = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { moveToRoot = true });
         conFlag.EnsureSuccessStatusCode();
         Assert.Null((await conFlag.Content.ReadFromJsonAsync<FileDto>())!.FolderId);
     }
@@ -151,7 +151,7 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         // Mover a una carpeta ajena colocaria contenido de B dentro del arbol de
         // A. Se responde 404 y no 403: confirmar que existe ya seria filtrar.
-        var response = await clientB.PatchAsJsonAsync($"/files/{fileDeB.Id}", new { folderId = carpetaDeA.Id });
+        var response = await clientB.PatchAsJsonAsync($"/v1/files/{fileDeB.Id}", new { folderId = carpetaDeA.Id });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -165,11 +165,11 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
 
         using var clientB = await NewClientAsync();
 
-        var response = await clientB.PatchAsJsonAsync($"/files/{fileDeA.Id}", new { name = "secuestrado.txt" });
+        var response = await clientB.PatchAsJsonAsync($"/v1/files/{fileDeA.Id}", new { name = "secuestrado.txt" });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
         // Y el archivo de A conserva su nombre.
-        var sinCambios = await clientA.GetFromJsonAsync<FileDto>($"/files/{fileDeA.Id}/metadata");
+        var sinCambios = await clientA.GetFromJsonAsync<FileDto>($"/v1/files/{fileDeA.Id}/metadata");
         Assert.Equal("de-a.txt", sinCambios!.OriginalName);
     }
 
@@ -179,10 +179,10 @@ public class FileUpdateTests(IntegrationTestFixture fixture)
         using var client = await NewClientAsync();
         var file = await UploadAsync(client, "borrado.txt");
 
-        await client.DeleteAsync($"/files/{file.Id}");
+        await client.DeleteAsync($"/v1/files/{file.Id}");
 
         // Lo que esta en la papelera no se edita: primero se restaura.
-        var response = await client.PatchAsJsonAsync($"/files/{file.Id}", new { name = "otro.txt" });
+        var response = await client.PatchAsJsonAsync($"/v1/files/{file.Id}", new { name = "otro.txt" });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

@@ -31,9 +31,9 @@ public class PurgeTests(IntegrationTestFixture fixture)
     private static async Task<Guid> UploadAndDeleteAsync(HttpClient client, string name, string content)
     {
         using var form = FileForm(name, content);
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
-        await client.DeleteAsync($"/files/{file!.Id}");
+        await client.DeleteAsync($"/v1/files/{file!.Id}");
         return file.Id;
     }
 

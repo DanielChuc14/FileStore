@@ -1,4 +1,5 @@
 using FileStore.API.Contracts;
+using FileStore.API.Infrastructure;
 using FileStore.Application.Common;
 using FileStore.Application.Common.Models;
 using FileStore.Application.Features.Files.Common;
@@ -16,7 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FileStore.API.Controllers;
 
 [ApiController]
-[Route("files")]
+[Route(ApiRoutes.V1 + "/files")]
 [Authorize(Policy = AuthPolicies.ClientContent)]
 public class FilesController(ISender sender) : ControllerBase
 {

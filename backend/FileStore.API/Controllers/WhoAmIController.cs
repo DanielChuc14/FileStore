@@ -1,3 +1,4 @@
+using FileStore.API.Infrastructure;
 using System.Security.Claims;
 using FileStore.Application.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ namespace FileStore.API.Controllers;
 /// un archivo para probarlo.
 /// </summary>
 [ApiController]
-[Route("whoami")]
+[Route(ApiRoutes.V1 + "/whoami")]
 [Authorize(Policy = AuthPolicies.ApiKey)]
 public class WhoAmIController : ControllerBase
 {

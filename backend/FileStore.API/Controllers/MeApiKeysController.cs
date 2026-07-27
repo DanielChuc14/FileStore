@@ -1,4 +1,5 @@
 using FileStore.API.Contracts;
+using FileStore.API.Infrastructure;
 using FileStore.Application.Common;
 using FileStore.Application.Features.ApiKeys.Common;
 using FileStore.Application.Features.ApiKeys.Create;
@@ -17,7 +18,7 @@ namespace FileStore.API.Controllers;
 /// una key no deberia poder crear otras keys ni revocarse a si misma.
 /// </summary>
 [ApiController]
-[Route("me/api-keys")]
+[Route(ApiRoutes.V1 + "/me/api-keys")]
 [Authorize(Policy = AuthPolicies.Client)]
 public class MeApiKeysController(ISender sender) : ControllerBase
 {

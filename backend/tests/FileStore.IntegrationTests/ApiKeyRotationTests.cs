@@ -21,7 +21,7 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
     private static async Task<CreateKeyResult> CreateKeyAsync(
         HttpClient client, string name, int? rateLimitPerMinute = null)
     {
-        var response = await client.PostAsJsonAsync("/me/api-keys", new { name, rateLimitPerMinute });
+        var response = await client.PostAsJsonAsync("/v1/me/api-keys", new { name, rateLimitPerMinute });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<CreateKeyResult>())!;
     }
@@ -37,11 +37,11 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
 
         using (var conLaVieja = fixture.ApiKeyClient(original.Value))
         {
-            var antes = await conLaVieja.GetAsync("/files");
+            var antes = await conLaVieja.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.OK, antes.StatusCode);
         }
 
-        var rotation = await panel.PostAsync($"/me/api-keys/{original.ApiKey.Id}/rotate", null);
+        var rotation = await panel.PostAsync($"/v1/me/api-keys/{original.ApiKey.Id}/rotate", null);
         Assert.Equal(HttpStatusCode.OK, rotation.StatusCode);
         var rotated = (await rotation.Content.ReadFromJsonAsync<CreateKeyResult>())!;
 
@@ -51,13 +51,13 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
 
         using (var conLaVieja = fixture.ApiKeyClient(original.Value))
         {
-            var despues = await conLaVieja.GetAsync("/files");
+            var despues = await conLaVieja.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.Unauthorized, despues.StatusCode);
         }
 
         using (var conLaNueva = fixture.ApiKeyClient(rotated.Value))
         {
-            var response = await conLaNueva.GetAsync("/files");
+            var response = await conLaNueva.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
     }
@@ -71,7 +71,7 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
 
         var original = await CreateKeyAsync(panel, "produccion", rateLimitPerMinute: 250);
 
-        var rotation = await panel.PostAsync($"/me/api-keys/{original.ApiKey.Id}/rotate", null);
+        var rotation = await panel.PostAsync($"/v1/me/api-keys/{original.ApiKey.Id}/rotate", null);
         var rotated = (await rotation.Content.ReadFromJsonAsync<CreateKeyResult>())!;
 
         // Rotar no debe obligar a reconfigurar la key en el consumidor.
@@ -89,10 +89,10 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
         using var panel = fixture.AuthenticatedClient(jwt);
 
         var original = await CreateKeyAsync(panel, "a-rotar");
-        var rotation = await panel.PostAsync($"/me/api-keys/{original.ApiKey.Id}/rotate", null);
+        var rotation = await panel.PostAsync($"/v1/me/api-keys/{original.ApiKey.Id}/rotate", null);
         var rotated = (await rotation.Content.ReadFromJsonAsync<CreateKeyResult>())!;
 
-        var keys = (await panel.GetFromJsonAsync<List<ApiKeyDto>>("/me/api-keys"))!;
+        var keys = (await panel.GetFromJsonAsync<List<ApiKeyDto>>("/v1/me/api-keys"))!;
 
         // La vieja no se borra: queda como rastro auditable de que existio.
         var vieja = keys.Single(k => k.Id == original.ApiKey.Id);
@@ -115,12 +115,12 @@ public class ApiKeyRotationTests(IntegrationTestFixture fixture)
         var jwtB = await fixture.LoginAsync(emailB, passwordB);
         using var panelB = fixture.AuthenticatedClient(jwtB);
 
-        var response = await panelB.PostAsync($"/me/api-keys/{keyDeA.ApiKey.Id}/rotate", null);
+        var response = await panelB.PostAsync($"/v1/me/api-keys/{keyDeA.ApiKey.Id}/rotate", null);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
         // Y la key de A sigue funcionando: el intento fallido no la toco.
         using var conLaDeA = fixture.ApiKeyClient(keyDeA.Value);
-        var sigueViva = await conLaDeA.GetAsync("/files");
+        var sigueViva = await conLaDeA.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.OK, sigueViva.StatusCode);
     }
 }

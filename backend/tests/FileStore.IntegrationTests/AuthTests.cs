@@ -12,7 +12,7 @@ public class AuthTests(IntegrationTestFixture fixture)
         var (_, email, password) = await fixture.CreateClientAsync();
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var response = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -23,7 +23,7 @@ public class AuthTests(IntegrationTestFixture fixture)
         var (_, email, _) = await fixture.CreateClientAsync();
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/auth/login", new { email, password = "incorrecta" });
+        var response = await client.PostAsJsonAsync("/v1/auth/login", new { email, password = "incorrecta" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -33,7 +33,7 @@ public class AuthTests(IntegrationTestFixture fixture)
     {
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/auth/login",
+        var response = await client.PostAsJsonAsync("/v1/auth/login",
             new { email = "no-existe@example.com", password = "loquesea123" });
 
         // Mismo codigo que contraseña incorrecta: no se revela si el email existe.
@@ -46,7 +46,7 @@ public class AuthTests(IntegrationTestFixture fixture)
         var (_, email, password) = await fixture.CreateClientAsync();
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var response = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
 
         // El refresh token viaja en cookie con los flags de seguridad, no en el body.
         var setCookie = response.Headers.GetValues("Set-Cookie").First();
@@ -65,7 +65,7 @@ public class AuthTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(adminToken);
 
         // El super-admin no tiene contenido propio: /me/usage le da 403.
-        var response = await client.GetAsync("/me/usage");
+        var response = await client.GetAsync("/v1/me/usage");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -77,7 +77,7 @@ public class AuthTests(IntegrationTestFixture fixture)
         var token = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(token);
 
-        var response = await client.GetAsync("/admin/clients");
+        var response = await client.GetAsync("/v1/admin/clients");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -87,7 +87,7 @@ public class AuthTests(IntegrationTestFixture fixture)
     {
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.GetAsync("/me/usage");
+        var response = await client.GetAsync("/v1/me/usage");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

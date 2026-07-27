@@ -1,4 +1,5 @@
 using FileStore.API.Contracts;
+using FileStore.API.Infrastructure;
 using FileStore.Application.Common.Exceptions;
 using FileStore.Application.Features.Auth.Common;
 using FileStore.Application.Features.Auth.ForgotPassword;
@@ -14,7 +15,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace FileStore.API.Controllers;
 
 [ApiController]
-[Route("auth")]
+[Route(ApiRoutes.V1 + "/auth")]
 // Limite por IP: frena la fuerza bruta contra el login sin afectar el limite por
 // API Key del resto de la API.
 [EnableRateLimiting("auth")]

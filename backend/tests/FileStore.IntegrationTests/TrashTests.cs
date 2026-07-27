@@ -31,10 +31,10 @@ public class TrashTests(IntegrationTestFixture fixture)
     private static async Task<Guid> UploadAndDeleteAsync(HttpClient client, string name, string content)
     {
         using var form = FileForm(name, content);
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
 
-        var delete = await client.DeleteAsync($"/files/{file!.Id}");
+        var delete = await client.DeleteAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
         return file.Id;
@@ -49,7 +49,7 @@ public class TrashTests(IntegrationTestFixture fixture)
 
         var fileId = await UploadAndDeleteAsync(client, "borrado.txt", "contenido");
 
-        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/trash");
+        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/v1/trash");
 
         var item = Assert.Single(trash!);
         Assert.Equal(fileId, item.Id);
@@ -66,19 +66,19 @@ public class TrashTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         var fileId = await UploadAndDeleteAsync(client, "recuperable.txt", "contenido a recuperar");
-        var usageEnPapelera = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var usageEnPapelera = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
 
-        var restore = await client.PostAsync($"/trash/{fileId}/restore", null);
+        var restore = await client.PostAsync($"/v1/trash/{fileId}/restore", null);
         Assert.Equal(HttpStatusCode.NoContent, restore.StatusCode);
 
         // Vuelve al listado activo y desaparece de la papelera.
-        var files = await client.GetFromJsonAsync<PagedFiles>("/files");
+        var files = await client.GetFromJsonAsync<PagedFiles>("/v1/files");
         Assert.Contains(files!.Items, f => f.Id == fileId);
-        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/trash");
+        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/v1/trash");
         Assert.DoesNotContain(trash!, t => t.Id == fileId);
 
         // La cuota no cambia: el archivo nunca dejo de ocupar espacio.
-        var usageRestaurado = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var usageRestaurado = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
         Assert.Equal(usageEnPapelera!.UsedBytes, usageRestaurado!.UsedBytes);
     }
 
@@ -90,16 +90,16 @@ public class TrashTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         var fileId = await UploadAndDeleteAsync(client, "definitivo.txt", "contenido a eliminar");
-        var usageAntes = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var usageAntes = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
         Assert.True(usageAntes!.UsedBytes > 0);
 
-        var hardDelete = await client.DeleteAsync($"/trash/{fileId}");
+        var hardDelete = await client.DeleteAsync($"/v1/trash/{fileId}");
         Assert.Equal(HttpStatusCode.NoContent, hardDelete.StatusCode);
 
         // Ya no esta en la papelera y la cuota se libero por completo.
-        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/trash");
+        var trash = await client.GetFromJsonAsync<List<TrashItemDto>>("/v1/trash");
         Assert.DoesNotContain(trash!, t => t.Id == fileId);
-        var usageDespues = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var usageDespues = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
         Assert.Equal(0, usageDespues!.UsedBytes);
     }
 }

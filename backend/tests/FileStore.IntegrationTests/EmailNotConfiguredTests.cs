@@ -30,7 +30,7 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
 
         await fixture.Factory.WithEmailDeliveryDisabledAsync(async () =>
         {
-            var response = await admin.PostAsJsonAsync("/admin/clients", new
+            var response = await admin.PostAsJsonAsync("/v1/admin/clients", new
             {
                 email,
                 name = "Cliente Sin Correo",
@@ -46,7 +46,7 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
         });
 
         // Y no queda ninguna cuenta a medias.
-        var listado = await admin.GetFromJsonAsync<PagedClients>($"/admin/clients?search={email}");
+        var listado = await admin.GetFromJsonAsync<PagedClients>($"/v1/admin/clients?search={email}");
         Assert.Empty(listado!.Items);
     }
 
@@ -60,7 +60,7 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
             var adminToken = await fixture.LoginAsAdminAsync();
             using var admin = fixture.AuthenticatedClient(adminToken);
 
-            var response = await admin.PostAsync($"/admin/clients/{clientId}/reset-password", null);
+            var response = await admin.PostAsync($"/v1/admin/clients/{clientId}/reset-password", null);
             Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         });
 
@@ -79,7 +79,7 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
         {
             using var anonymous = fixture.Factory.CreateClient();
 
-            var response = await anonymous.PostAsJsonAsync("/auth/forgot-password", new { email });
+            var response = await anonymous.PostAsJsonAsync("/v1/auth/forgot-password", new { email });
 
             // Aqui no se destruye nada, pero devolver 204 dejaria al usuario
             // esperando indefinidamente un correo que no iba a salir.
@@ -97,8 +97,8 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
         {
             using var anonymous = fixture.Factory.CreateClient();
 
-            var conCuenta = await anonymous.PostAsJsonAsync("/auth/forgot-password", new { email = existente });
-            var sinCuenta = await anonymous.PostAsJsonAsync("/auth/forgot-password", new { email = inexistente });
+            var conCuenta = await anonymous.PostAsJsonAsync("/v1/auth/forgot-password", new { email = existente });
+            var sinCuenta = await anonymous.PostAsJsonAsync("/v1/auth/forgot-password", new { email = inexistente });
 
             // La guarda se evalua antes de mirar si la cuenta existe, asi que la
             // respuesta es identica en ambos casos. Si dependiera de la cuenta,
@@ -119,10 +119,10 @@ public class EmailNotConfiguredTests(IntegrationTestFixture fixture)
 
             // Crear una API Key manda un aviso, pero ese aviso es informativo:
             // perderlo no rompe nada. Bloquear la operacion seria pasarse.
-            var created = await client.PostAsJsonAsync("/me/api-keys", new { name = "sin-correo" });
+            var created = await client.PostAsJsonAsync("/v1/me/api-keys", new { name = "sin-correo" });
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
-            var files = await client.GetAsync("/files");
+            var files = await client.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.OK, files.StatusCode);
         });
     }

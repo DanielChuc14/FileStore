@@ -17,14 +17,14 @@ public class FolderTests(IntegrationTestFixture fixture)
 
     private static async Task<FolderDto> CreateFolderAsync(HttpClient client, string name, Guid? parentId)
     {
-        var response = await client.PostAsJsonAsync("/folders", new { name, parentId });
+        var response = await client.PostAsJsonAsync("/v1/folders", new { name, parentId });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<FolderDto>())!;
     }
 
     private static async Task<FolderDto> GetFolderAsync(HttpClient client, Guid id)
     {
-        var all = await client.GetFromJsonAsync<List<FolderDto>>("/folders?all=true");
+        var all = await client.GetFromJsonAsync<List<FolderDto>>("/v1/folders?all=true");
         return all!.Single(f => f.Id == id);
     }
 
@@ -53,7 +53,7 @@ public class FolderTests(IntegrationTestFixture fixture)
         var (docs, anio, facturas) = await CreateTreeAsync(client);
 
         // Renombrar la raiz del arbol.
-        var rename = await client.PatchAsJsonAsync($"/folders/{docs.Id}", new { name = "documentos" });
+        var rename = await client.PatchAsJsonAsync($"/v1/folders/{docs.Id}", new { name = "documentos" });
         Assert.Equal(HttpStatusCode.OK, rename.StatusCode);
 
         // Toda la descendencia refleja el nombre nuevo en su Path.
@@ -74,7 +74,7 @@ public class FolderTests(IntegrationTestFixture fixture)
         var docs = await CreateFolderAsync(client, "docs", null);
 
         // Renombrar /doc no debe tocar /docs (el recalculo filtra por "oldPath/").
-        await client.PatchAsJsonAsync($"/folders/{doc.Id}", new { name = "carpeta" });
+        await client.PatchAsJsonAsync($"/v1/folders/{doc.Id}", new { name = "carpeta" });
 
         Assert.Equal("/carpeta", (await GetFolderAsync(client, doc.Id)).Path);
         Assert.Equal("/docs", (await GetFolderAsync(client, docs.Id)).Path);
@@ -91,7 +91,7 @@ public class FolderTests(IntegrationTestFixture fixture)
         var destino = await CreateFolderAsync(client, "archivo", null);
 
         // Mover /docs/2026 (con su hijo facturas) bajo /archivo.
-        var move = await client.PatchAsJsonAsync($"/folders/{anio.Id}", new { parentId = destino.Id });
+        var move = await client.PatchAsJsonAsync($"/v1/folders/{anio.Id}", new { parentId = destino.Id });
         Assert.Equal(HttpStatusCode.OK, move.StatusCode);
 
         Assert.Equal("/archivo/2026", (await GetFolderAsync(client, anio.Id)).Path);
@@ -109,7 +109,7 @@ public class FolderTests(IntegrationTestFixture fixture)
 
         // Mover /docs dentro de /docs/2026/facturas desconectaria el subarbol:
         // debe rechazarse con 409.
-        var move = await client.PatchAsJsonAsync($"/folders/{docs.Id}", new { parentId = facturas.Id });
+        var move = await client.PatchAsJsonAsync($"/v1/folders/{docs.Id}", new { parentId = facturas.Id });
         Assert.Equal(HttpStatusCode.Conflict, move.StatusCode);
     }
 }

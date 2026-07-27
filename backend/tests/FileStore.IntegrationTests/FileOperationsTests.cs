@@ -25,7 +25,7 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         using var form = FileForm("documento.txt", "contenido de prueba");
-        var response = await client.PostAsync("/files", form);
+        var response = await client.PostAsync("/v1/files", form);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var file = await response.Content.ReadFromJsonAsync<UploadedFile>();
@@ -42,7 +42,7 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         using var form = FileForm("malicioso.exe", "contenido");
-        var response = await client.PostAsync("/files", form);
+        var response = await client.PostAsync("/v1/files", form);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -55,11 +55,11 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         using var form1 = FileForm("informe.txt", "version 1");
-        var first = await client.PostAsync("/files", form1);
+        var first = await client.PostAsync("/v1/files", form1);
         var file1 = await first.Content.ReadFromJsonAsync<UploadedFile>();
 
         using var form2 = FileForm("informe.txt", "version 2 con mas texto");
-        var second = await client.PostAsync("/files", form2);
+        var second = await client.PostAsync("/v1/files", form2);
         var file2 = await second.Content.ReadFromJsonAsync<UploadedFile>();
 
         // Mismo archivo, no un duplicado; con dos versiones.
@@ -76,7 +76,7 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         using var form = FileForm("grande.txt", new string('x', 500));
-        var response = await client.PostAsync("/files", form);
+        var response = await client.PostAsync("/v1/files", form);
 
         Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
     }
@@ -98,7 +98,7 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         {
             using var client = fixture.AuthenticatedClient(token);
             using var form = FileForm($"archivo-{i}.txt", new string('y', 400));
-            var response = await client.PostAsync("/files", form);
+            var response = await client.PostAsync("/v1/files", form);
             return response.StatusCode;
         });
 
@@ -114,7 +114,7 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         // Y la cuota final nunca supero el limite.
         var adminToken = await fixture.LoginAsAdminAsync();
         using var adminClient = fixture.AuthenticatedClient(adminToken);
-        var detail = await adminClient.GetFromJsonAsync<UsageResponse>($"/admin/clients/{clientId}");
+        var detail = await adminClient.GetFromJsonAsync<UsageResponse>($"/v1/admin/clients/{clientId}");
         Assert.True(detail!.UsedBytes <= 900,
             $"UsedBytes={detail.UsedBytes} supero la cuota de 900");
     }
@@ -127,16 +127,16 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(token);
 
         using var form = FileForm("borrable.txt", "contenido para borrar");
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
 
-        var beforeUsage = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var beforeUsage = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
 
-        var delete = await client.DeleteAsync($"/files/{file!.Id}");
+        var delete = await client.DeleteAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
         // Borrado suave: el archivo va a la papelera pero SIGUE ocupando cuota.
-        var afterUsage = await client.GetFromJsonAsync<UsageResponse>("/me/usage");
+        var afterUsage = await client.GetFromJsonAsync<UsageResponse>("/v1/me/usage");
         Assert.Equal(beforeUsage!.UsedBytes, afterUsage!.UsedBytes);
         Assert.Equal(0, afterUsage.FilesCount); // ya no en el listado activo
     }
@@ -150,10 +150,10 @@ public class FileOperationsTests(IntegrationTestFixture fixture)
 
         var contenido = "contenido exacto que debe volver intacto";
         using var form = FileForm("prueba.txt", contenido);
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
 
-        var download = await client.GetAsync($"/files/{file!.Id}");
+        var download = await client.GetAsync($"/v1/files/{file!.Id}");
         var bytes = await download.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, download.StatusCode);

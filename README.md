@@ -32,6 +32,8 @@ moderno**, con foco en seguridad y aislamiento de datos.
   autoservicio de contraseña, avisos de cuota al 80/95% y alertas de seguridad.
   Salen por una tabla de salida que se confirma en la misma transacción que el
   cambio que los motiva. Ver `EMAIL.md`.
+- **API versionada** bajo `/v1`, con compromiso de no romper el contrato
+  mientras esa versión exista.
 - **i18n** desde la primera vista.
 
 ---

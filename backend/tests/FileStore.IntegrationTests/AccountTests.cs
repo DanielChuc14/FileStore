@@ -30,7 +30,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.PostAsJsonAsync("/me/change-password", new
+        var response = await client.PostAsJsonAsync("/v1/me/change-password", new
         {
             currentPassword = password,
             newPassword = NewPassword
@@ -42,7 +42,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         await fixture.LoginAsync(email, NewPassword);
 
         using var anonymous = fixture.Factory.CreateClient();
-        var conLaVieja = await anonymous.PostAsJsonAsync("/auth/login", new { email, password });
+        var conLaVieja = await anonymous.PostAsJsonAsync("/v1/auth/login", new { email, password });
         Assert.Equal(HttpStatusCode.Unauthorized, conLaVieja.StatusCode);
     }
 
@@ -53,7 +53,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.PostAsJsonAsync("/me/change-password", new
+        var response = await client.PostAsJsonAsync("/v1/me/change-password", new
         {
             currentPassword = "no-es-la-mia",
             newPassword = NewPassword
@@ -65,7 +65,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
 
         // Y la sesion sigue viva, que es la otra mitad del asunto.
-        var sigueDentro = await client.GetAsync("/files");
+        var sigueDentro = await client.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.OK, sigueDentro.StatusCode);
 
         // La contraseña original no cambio.
@@ -79,7 +79,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.PostAsJsonAsync("/me/change-password", new
+        var response = await client.PostAsJsonAsync("/v1/me/change-password", new
         {
             currentPassword = password,
             newPassword = "corta"
@@ -95,7 +95,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.PostAsJsonAsync("/me/change-password", new
+        var response = await client.PostAsJsonAsync("/v1/me/change-password", new
         {
             currentPassword = password,
             newPassword = password
@@ -114,7 +114,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var (_, email, password) = await fixture.CreateClientAsync();
 
         using var client = fixture.Factory.CreateClient();
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var login = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
         var cookie = login.Headers.GetValues("Set-Cookie")
             .First(c => c.StartsWith("fs_refresh="))
             .Split(';')[0];
@@ -122,7 +122,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         using var sesion = fixture.Factory.CreateClient();
         sesion.DefaultRequestHeaders.Add("Cookie", cookie);
 
-        var logout = await sesion.PostAsync("/auth/logout", null);
+        var logout = await sesion.PostAsync("/v1/auth/logout", null);
         Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
 
         // La cookie se borra pidiendo al navegador que la expire.
@@ -135,7 +135,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         // verdad cierra la sesion: borrar la cookie solo afecta a ese navegador.
         using var replay = fixture.Factory.CreateClient();
         replay.DefaultRequestHeaders.Add("Cookie", cookie);
-        var refresh = await replay.PostAsync("/auth/refresh", null);
+        var refresh = await replay.PostAsync("/v1/auth/refresh", null);
         Assert.Equal(HttpStatusCode.Unauthorized, refresh.StatusCode);
     }
 
@@ -146,7 +146,7 @@ public class AccountTests(IntegrationTestFixture fixture)
 
         // Es idempotente a proposito: cerrar sesion sin tenerla no es un error, y
         // el panel lo llama tambien cuando ya expiro todo.
-        var response = await anonymous.PostAsync("/auth/logout", null);
+        var response = await anonymous.PostAsync("/v1/auth/logout", null);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
@@ -159,7 +159,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var profile = await client.GetFromJsonAsync<ProfileDto>("/me");
+        var profile = await client.GetFromJsonAsync<ProfileDto>("/v1/me");
 
         Assert.Equal(clientId, profile!.Id);
         Assert.Equal(email, profile.Email);
@@ -172,11 +172,11 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
 
         using var panel = fixture.AuthenticatedClient(jwt);
-        var created = await panel.PostAsJsonAsync("/me/api-keys", new { name = "whoami" });
+        var created = await panel.PostAsJsonAsync("/v1/me/api-keys", new { name = "whoami" });
         var key = await created.Content.ReadFromJsonAsync<CreateKeyResult>();
 
         using var apiClient = fixture.ApiKeyClient(key!.Value);
-        var whoami = await apiClient.GetFromJsonAsync<WhoAmIDto>("/whoami");
+        var whoami = await apiClient.GetFromJsonAsync<WhoAmIDto>("/v1/whoami");
 
         // Existe para que una integracion pueda comprobar su credencial sin
         // tener que subir un archivo de prueba.
@@ -194,7 +194,7 @@ public class AccountTests(IntegrationTestFixture fixture)
 
         // Es el unico endpoint con politica de API Key pura: un JWT no lo abre,
         // que es lo que mantiene separados los dos canales.
-        var response = await panel.GetAsync("/whoami");
+        var response = await panel.GetAsync("/v1/whoami");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -206,7 +206,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var tipos = await admin.GetFromJsonAsync<List<AllowedTypeDto>>("/admin/allowed-types");
+        var tipos = await admin.GetFromJsonAsync<List<AllowedTypeDto>>("/v1/admin/allowed-types");
         var csv = tipos!.Single(t => t.Extension == "csv");
 
         var (_, email, password) = await fixture.CreateClientAsync();
@@ -215,7 +215,7 @@ public class AccountTests(IntegrationTestFixture fixture)
 
         try
         {
-            var patch = await admin.PatchAsJsonAsync($"/admin/allowed-types/{csv.Id}", new { isEnabled = false });
+            var patch = await admin.PatchAsJsonAsync($"/v1/admin/allowed-types/{csv.Id}", new { isEnabled = false });
             Assert.Equal(HttpStatusCode.OK, patch.StatusCode);
 
             using var form = new MultipartFormDataContent();
@@ -223,20 +223,20 @@ public class AccountTests(IntegrationTestFixture fixture)
 
             // La whitelist es configuracion viva: desactivar un tipo tiene que
             // surtir efecto en la siguiente subida, sin reiniciar nada.
-            var upload = await client.PostAsync("/files", form);
+            var upload = await client.PostAsync("/v1/files", form);
             Assert.Equal(HttpStatusCode.BadRequest, upload.StatusCode);
         }
         finally
         {
             // Se restaura: la base es compartida por toda la coleccion y dejar el
             // csv desactivado rompería otros tests.
-            await admin.PatchAsJsonAsync($"/admin/allowed-types/{csv.Id}", new { isEnabled = true });
+            await admin.PatchAsJsonAsync($"/v1/admin/allowed-types/{csv.Id}", new { isEnabled = true });
         }
 
         // Y al reactivarlo vuelve a entrar.
         using var form2 = new MultipartFormDataContent();
         form2.Add(new ByteArrayContent("a,b,c"u8.ToArray()), "file", "datos.csv");
-        var ahora = await client.PostAsync("/files", form2);
+        var ahora = await client.PostAsync("/v1/files", form2);
         Assert.Equal(HttpStatusCode.Created, ahora.StatusCode);
     }
 
@@ -247,7 +247,7 @@ public class AccountTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.GetAsync("/admin/allowed-types");
+        var response = await client.GetAsync("/v1/admin/allowed-types");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

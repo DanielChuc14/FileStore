@@ -1,4 +1,5 @@
 using FileStore.API.Contracts;
+using FileStore.API.Infrastructure;
 using FileStore.Application.Common;
 using FileStore.Application.Features.Folders.Common;
 using FileStore.Application.Features.Folders.Create;
@@ -12,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FileStore.API.Controllers;
 
 [ApiController]
-[Route("folders")]
+[Route(ApiRoutes.V1 + "/folders")]
 [Authorize(Policy = AuthPolicies.ClientContent)]
 public class FoldersController(ISender sender) : ControllerBase
 {

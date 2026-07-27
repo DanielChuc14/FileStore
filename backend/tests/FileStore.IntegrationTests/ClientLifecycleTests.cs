@@ -33,7 +33,7 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         using var admin = fixture.AuthenticatedClient(adminToken);
 
         var response = await admin.PatchAsJsonAsync(
-            $"/admin/clients/{clientId}", new { isActive });
+            $"/v1/admin/clients/{clientId}", new { isActive });
 
         response.EnsureSuccessStatusCode();
     }
@@ -43,7 +43,7 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var response = await admin.DeleteAsync($"/admin/clients/{clientId}");
+        var response = await admin.DeleteAsync($"/v1/admin/clients/{clientId}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
@@ -57,17 +57,17 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         // exactamente el escenario del cliente que ya tenia sesion abierta.
         using var client = fixture.AuthenticatedClient(jwt);
         using var form = FileForm("antes-de-la-baja.txt", "contenido");
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         upload.EnsureSuccessStatusCode();
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
 
         await SetActiveAsync(clientId, isActive: false);
 
         // Mismo token, que sigue sin expirar.
-        var list = await client.GetAsync("/files");
+        var list = await client.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.Unauthorized, list.StatusCode);
 
-        var download = await client.GetAsync($"/files/{file!.Id}");
+        var download = await client.GetAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.Unauthorized, download.StatusCode);
     }
 
@@ -79,7 +79,7 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
 
         using var client = fixture.AuthenticatedClient(jwt);
         using var form = FileForm("antes-de-la-baja.txt", "contenido");
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         var file = await upload.Content.ReadFromJsonAsync<UploadedFile>();
 
         await SetActiveAsync(clientId, isActive: false);
@@ -88,10 +88,10 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         // cliente dado de baja podria seguir consumiendo cuota o destruyendo
         // datos durante la ventana del token.
         using var second = FileForm("despues-de-la-baja.txt", "contenido");
-        var blockedUpload = await client.PostAsync("/files", second);
+        var blockedUpload = await client.PostAsync("/v1/files", second);
         Assert.Equal(HttpStatusCode.Unauthorized, blockedUpload.StatusCode);
 
-        var delete = await client.DeleteAsync($"/files/{file!.Id}");
+        var delete = await client.DeleteAsync($"/v1/files/{file!.Id}");
         Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
     }
 
@@ -103,13 +103,13 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(jwt);
 
         await SetActiveAsync(clientId, isActive: false);
-        var blocked = await client.GetAsync("/files");
+        var blocked = await client.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.Unauthorized, blocked.StatusCode);
 
         // El corte es por estado en la base, no por invalidar el token: al
         // reactivar la cuenta el mismo token vuelve a servir.
         await SetActiveAsync(clientId, isActive: true);
-        var allowed = await client.GetAsync("/files");
+        var allowed = await client.GetAsync("/v1/files");
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
     }
 
@@ -121,20 +121,20 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
 
         using (var panel = fixture.AuthenticatedClient(jwt))
         {
-            var created = await panel.PostAsJsonAsync("/me/api-keys",
+            var created = await panel.PostAsJsonAsync("/v1/me/api-keys",
                 new { name = "clave-antes-de-la-baja" });
             created.EnsureSuccessStatusCode();
             var key = await created.Content.ReadFromJsonAsync<CreateKeyResult>();
 
             using var apiClient = fixture.ApiKeyClient(key!.Value);
 
-            var beforeDelete = await apiClient.GetAsync("/files");
+            var beforeDelete = await apiClient.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.OK, beforeDelete.StatusCode);
 
             await DeleteClientAsync(clientId);
 
             // La key sigue activa como fila, pero su dueño ya no existe.
-            var afterDelete = await apiClient.GetAsync("/files");
+            var afterDelete = await apiClient.GetAsync("/v1/files");
             Assert.Equal(HttpStatusCode.Unauthorized, afterDelete.StatusCode);
         }
     }
@@ -146,7 +146,7 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         await DeleteClientAsync(clientId);
 
         using var client = fixture.Factory.CreateClient();
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var login = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
 
         Assert.Equal(HttpStatusCode.Unauthorized, login.StatusCode);
     }
@@ -159,7 +159,7 @@ public class ClientLifecycleTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var response = await admin.GetAsync("/admin/clients");
+        var response = await admin.GetAsync("/v1/admin/clients");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

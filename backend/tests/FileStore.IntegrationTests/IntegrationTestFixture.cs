@@ -43,7 +43,7 @@ public class IntegrationTestFixture : IAsyncLifetime
     public async Task<string> LoginAsync(string email, string password)
     {
         using var client = Factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var response = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
         return body!.AccessToken;
@@ -59,7 +59,7 @@ public class IntegrationTestFixture : IAsyncLifetime
         using var client = AuthenticatedClient(adminToken);
 
         var email = $"it-{Guid.NewGuid():N}@example.com";
-        var response = await client.PostAsJsonAsync("/admin/clients", new
+        var response = await client.PostAsJsonAsync("/v1/admin/clients", new
         {
             email,
             name = "Cliente Integracion",

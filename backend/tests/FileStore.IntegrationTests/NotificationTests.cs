@@ -108,7 +108,7 @@ public class NotificationTests(IntegrationTestFixture fixture)
 
         using var client = fixture.Factory.CreateClient();
 
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var login = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
         var cookie = login.Headers.GetValues("Set-Cookie")
             .First(c => c.StartsWith("fs_refresh="));
         var original = cookie.Split(';')[0];
@@ -116,13 +116,13 @@ public class NotificationTests(IntegrationTestFixture fixture)
         // Se rota: el token original queda revocado.
         using var withCookie = fixture.Factory.CreateClient();
         withCookie.DefaultRequestHeaders.Add("Cookie", original);
-        var rotation = await withCookie.PostAsync("/auth/refresh", null);
+        var rotation = await withCookie.PostAsync("/v1/auth/refresh", null);
         Assert.Equal(HttpStatusCode.OK, rotation.StatusCode);
 
         // Y ahora se reusa el viejo, que es la señal de sesion robada.
         using var replay = fixture.Factory.CreateClient();
         replay.DefaultRequestHeaders.Add("Cookie", original);
-        var reused = await replay.PostAsync("/auth/refresh", null);
+        var reused = await replay.PostAsync("/v1/auth/refresh", null);
         Assert.Equal(HttpStatusCode.Unauthorized, reused.StatusCode);
 
         // Antes esto se detectaba y se cortaba en silencio: el cliente veia morir
@@ -138,7 +138,7 @@ public class NotificationTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
 
         using var panel = fixture.AuthenticatedClient(jwt);
-        var created = await panel.PostAsJsonAsync("/me/api-keys", new { name = "integracion-nueva" });
+        var created = await panel.PostAsJsonAsync("/v1/me/api-keys", new { name = "integracion-nueva" });
         created.EnsureSuccessStatusCode();
 
         var queued = await fixture.Factory.GetQueuedEmailsAsync(email);
@@ -153,10 +153,10 @@ public class NotificationTests(IntegrationTestFixture fixture)
 
         using var panel = fixture.AuthenticatedClient(jwt);
 
-        var created = await panel.PostAsJsonAsync("/me/api-keys", new { name = "a-rotar" });
+        var created = await panel.PostAsJsonAsync("/v1/me/api-keys", new { name = "a-rotar" });
         var body = await created.Content.ReadFromJsonAsync<CreateKeyResponse>();
 
-        await panel.PostAsync($"/me/api-keys/{body!.ApiKey.Id}/rotate", null);
+        await panel.PostAsync($"/v1/me/api-keys/{body!.ApiKey.Id}/rotate", null);
 
         // Dos avisos: uno por la creacion y otro por la rotacion.
         var avisos = (await fixture.Factory.GetQueuedEmailsAsync(email))

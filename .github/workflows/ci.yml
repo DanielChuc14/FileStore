@@ -1,0 +1,101 @@
+name: CI
+
+# En cada push a main y en cada pull request. La idea es que romper algo se
+# note en minutos y no la proxima vez que alguien se acuerde de correr los tests
+# a mano: ya paso que una regresion vivio horas sin que nada avisara.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Si se empuja dos veces seguidas, la ejecucion anterior se cancela: interesa el
+# resultado del ultimo commit, no el de uno que ya quedo atras.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET 10)
+    runs-on: ubuntu-latest
+
+    # Los tests de integracion corren contra un PostgreSQL real y no contra una
+    # base en memoria. Es una decision deliberada del proyecto: la reserva
+    # atomica de cuota, las transacciones y los jsonb dependen del
+    # comportamiento de Postgres, que una base en memoria no reproduce.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # Sin el healthcheck, los pasos siguientes arrancarian antes de que la
+        # base acepte conexiones.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Preparar la base de tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c \
+            "CREATE ROLE filestore_test WITH LOGIN PASSWORD 'test_local_only';"
+          psql -h localhost -U postgres -c \
+            "CREATE DATABASE filestore_test OWNER filestore_test;"
+
+      - name: Restaurar
+        run: dotnet restore backend/backend.slnx
+
+      # -warnaserror: los avisos del compilador y de los analizadores de xUnit
+      # se tratan como errores. Un aviso ignorado se acumula hasta que nadie los
+      # mira; asi no llegan a acumularse.
+      - name: Compilar
+        run: dotnet build backend/backend.slnx --no-restore -warnaserror
+
+      - name: Tests unitarios
+        run: dotnet test backend/tests/FileStore.UnitTests --no-build --verbosity normal
+
+      - name: Tests de integracion
+        run: dotnet test backend/tests/FileStore.IntegrationTests --no-build --verbosity normal
+
+  frontend:
+    name: Frontend (Angular 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci y no npm install: instala exactamente lo del lockfile y falla si
+      # esta desincronizado con package.json, en vez de arreglarlo en silencio.
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Tests
+        working-directory: frontend
+        run: npm test
+
+      # El build de produccion se ejecuta aqui tambien porque tiene comprobaciones
+      # que el build de desarrollo no hace, y porque es el paso que mas tarda en
+      # descubrirse roto si solo se prueba al desplegar.
+      - name: Build de produccion
+        working-directory: frontend
+        run: npm run build

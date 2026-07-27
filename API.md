@@ -28,17 +28,17 @@ presentado a un endpoint de API Key no autentica, ni viceversa.
 | Canal | Credencial | Para qué sirve |
 |---|---|---|
 | **API Key** | Header `X-Api-Key` | Integraciones servidor-a-servidor. Es el canal que te interesa si estás conectando tu app a FileStore. |
-| **JWT** | Header `Authorization: Bearer …` | El panel web: autogestión del cliente (`/me`) y administración (`/admin`). |
+| **JWT** | Header `Authorization: Bearer …` | El panel web: autogestión del cliente (`/v1/me`) y administración (`/v1/admin`). |
 
 Qué acepta cada grupo de endpoints:
 
 | Endpoints | API Key | JWT (Client) | JWT (SuperAdmin) |
 |---|:---:|:---:|:---:|
-| `/files`, `/folders`, `/trash` | ✅ | ✅ | ❌ |
-| `/whoami` | ✅ | ❌ | ❌ |
-| `/me`, `/me/api-keys` | ❌ | ✅ | ❌ |
-| `/admin`, `/admin/clients` | ❌ | ❌ | ✅ |
-| `/auth/*`, `/health` | anónimo | | |
+| `/v1/files`, `/v1/folders`, `/v1/trash` | ✅ | ✅ | ❌ |
+| `/v1/whoami` | ✅ | ❌ | ❌ |
+| `/v1/me`, `/v1/me/api-keys` | ❌ | ✅ | ❌ |
+| `/v1/admin`, `/v1/admin/clients` | ❌ | ❌ | ✅ |
+| `/v1/auth/*`, `/health` | anónimo | | |
 
 Los endpoints de contenido aceptan ambos canales porque el explorador del panel
 consume exactamente los mismos endpoints que una integración externa. El
@@ -57,26 +57,26 @@ El camino completo desde cero:
 ```mermaid
 flowchart LR
     A[Super-admin crea<br/>el cliente] --> B[Cliente recibe email<br/>+ contraseña generada]
-    B --> C[Login en el panel<br/>POST /auth/login]
-    C --> D[Crear API Key<br/>POST /me/api-keys]
+    B --> C[Login en el panel<br/>POST /v1/auth/login]
+    C --> D[Crear API Key<br/>POST /v1/me/api-keys]
     D --> E[Guardar el valor<br/>se muestra UNA vez]
 ```
 
-1. **El super-admin da de alta tu cuenta de cliente** (`POST /admin/clients`).
+1. **El super-admin da de alta tu cuenta de cliente** (`POST /v1/admin/clients`).
    La contraseña generada te llega **por correo, directo a ti**: no aparece en la
    respuesta de la API ni la ve quien administra el servicio. Si no llega, se
-   puede pedir un reseteo (`POST /admin/clients/{id}/reset-password`), que genera
+   puede pedir un reseteo (`POST /v1/admin/clients/{id}/reset-password`), que genera
    una nueva y la envía por el mismo canal.
 
    Si olvidás la contraseña más adelante, podés recuperarla vos mismo desde el
-   panel (`¿Olvidaste tu contraseña?`) o con `POST /auth/forgot-password`. Llega
+   panel (`¿Olvidaste tu contraseña?`) o con `POST /v1/auth/forgot-password`. Llega
    un enlace de un solo uso que vence en una hora. El endpoint responde `204`
    siempre, exista o no la cuenta.
 
 2. **Iniciás sesión** con ese email y contraseña:
 
    ```bash
-   curl -X POST https://filestore.tudominio.com/auth/login \
+   curl -X POST https://filestore.tudominio.com/v1/auth/login \
      -H 'Content-Type: application/json' \
      -d '{"email":"tu@empresa.com","password":"la-generada"}'
    ```
@@ -94,7 +94,7 @@ flowchart LR
 3. **Creás la API Key** con ese access token:
 
    ```bash
-   curl -X POST https://filestore.tudominio.com/me/api-keys \
+   curl -X POST https://filestore.tudominio.com/v1/me/api-keys \
      -H 'Authorization: Bearer <accessToken>' \
      -H 'Content-Type: application/json' \
      -d '{"name":"integracion-facturacion","rateLimitPerMinute":null}'
@@ -118,7 +118,7 @@ flowchart LR
 
 > **`value` se devuelve una única vez.** Después de esta respuesta solo queda su
 > hash en la base: no hay ningún endpoint que lo vuelva a mostrar. Si lo perdés,
-> hay que rotar la key (`POST /me/api-keys/{id}/rotate`), lo que genera un valor
+> hay que rotar la key (`POST /v1/me/api-keys/{id}/rotate`), lo que genera un valor
 > nuevo e invalida el anterior.
 
 ### Formato de la key
@@ -143,16 +143,35 @@ completa (prefijo + `.` + secreto).
 | Desarrollo local | `https://localhost:7249` o `http://localhost:5263` |
 | Producción | el dominio configurado en `PUBLIC_ORIGIN` |
 
+### Versionado de la API
+
+Todas las rutas de la API llevan el prefijo **`/v1`**. La versión va en la ruta y
+no en una cabecera: se ve en cualquier log, se prueba con un `curl` sin
+ceremonia, y no se puede olvidar por accidente.
+
+Qué significa el compromiso de `v1`:
+
+- **No se te va a romper.** Mientras `v1` exista, no se quitan campos, no se
+  renombran, no cambian de tipo ni cambian los códigos de estado. Si hiciera
+  falta un cambio incompatible, saldría un `/v2` y ambos convivirían mientras
+  migras.
+- **Sí pueden aparecer campos nuevos** en las respuestas, y endpoints nuevos.
+  Tu integración debe tolerarlos: no asumas que conoces todas las claves de un
+  objeto, ni falles al encontrar una que no esperabas.
+- **`/health` y `/health/ready` no llevan versión.** Son para el orquestador, no
+  parte del contrato, y no deberían cambiar de ruta porque salga una versión
+  nueva de la API.
+
 En desarrollo también está **Swagger UI** en `/swagger`, con los dos candados
 (JWT y API Key) ya configurados para probar desde el navegador. Fuera de
 desarrollo Swagger no se monta.
 
-El primer llamado recomendado es `GET /whoami`: existe precisamente para
+El primer llamado recomendado es `GET /v1/whoami`: existe precisamente para
 verificar que tu key funciona y contra qué cliente resuelve, sin tener que
 subir un archivo para probarlo.
 
 ```bash
-curl https://filestore.tudominio.com/whoami \
+curl https://filestore.tudominio.com/v1/whoami \
   -H 'X-Api-Key: fs_live_A3xK9mQ2.hR7vN2pLxQ8…'
 ```
 
@@ -181,25 +200,25 @@ BASE=https://filestore.tudominio.com
 KEY='fs_live_A3xK9mQ2.hR7vN2pLxQ8…'
 
 # 1. Crear una carpeta en la raíz
-curl -X POST "$BASE/folders" \
+curl -X POST "$BASE/v1/folders" \
   -H "X-Api-Key: $KEY" \
   -H 'Content-Type: application/json' \
   -d '{"name":"facturas","parentId":null}'
 # → 201 {"id":"0198a2…","parentFolderId":null,"name":"facturas","path":"/facturas",…}
 
 # 2. Subir un archivo a esa carpeta (multipart, campo "file")
-curl -X POST "$BASE/files?folderId=0198a2…" \
+curl -X POST "$BASE/v1/files?folderId=0198a2…" \
   -H "X-Api-Key: $KEY" \
   -F 'file=@factura-001.pdf'
 # → 201 {"id":"0198a3…","originalName":"factura-001.pdf","sizeBytes":48213,…}
 
 # 3. Listar los archivos de la carpeta
-curl "$BASE/files?folderId=0198a2…&page=1&pageSize=50" \
+curl "$BASE/v1/files?folderId=0198a2…&page=1&pageSize=50" \
   -H "X-Api-Key: $KEY"
 # → 200 {"items":[…],"page":1,"pageSize":50,"totalCount":1,"totalPages":1,"hasNextPage":false}
 
 # 4. Descargar el binario
-curl "$BASE/files/0198a3…" \
+curl "$BASE/v1/files/0198a3…" \
   -H "X-Api-Key: $KEY" \
   -o factura-001.pdf
 ```
@@ -213,7 +232,7 @@ Todos los endpoints de esta sección aceptan `X-Api-Key`. Los cuerpos JSON usan
 
 ### Archivos
 
-#### `GET /files` — listar
+#### `GET /v1/files` — listar
 
 | Query param | Tipo | Default | Notas |
 |---|---|---|---|
@@ -252,7 +271,7 @@ Devuelve un `PagedResult<FileDto>`:
 
 Los resultados vienen ordenados por `updatedAt` descendente.
 
-#### `POST /files` — subir
+#### `POST /v1/files` — subir
 
 `multipart/form-data` con el archivo en el campo **`file`**. Query param
 opcional `folderId` (sin él, va a la raíz).
@@ -265,7 +284,7 @@ válidos. `413` si supera el tamaño máximo o no entra en la cuota. `404` si el
 > **Subir con el mismo nombre en la misma carpeta no crea un duplicado: crea
 > una versión nueva** del archivo existente. Ver [versionado](#versionado).
 
-#### `GET /files/{id}` — descargar
+#### `GET /v1/files/{id}` — descargar
 
 Devuelve el **binario**, no JSON. Query param opcional `version` (número de
 versión) para bajar una versión histórica en vez de la vigente.
@@ -274,12 +293,12 @@ Soporta **range requests** (`Accept-Ranges`), así que se puede reanudar una
 descarga o pedir un fragmento. El nombre original viaja en `Content-Disposition`
 y el tipo en `Content-Type`.
 
-#### `GET /files/{id}/metadata` — metadata sin descargar
+#### `GET /v1/files/{id}/metadata` — metadata sin descargar
 
 Devuelve el `FileDto` del archivo. Útil para chequear tamaño o versión vigente
 sin transferir el contenido.
 
-#### `PATCH /files/{id}` — renombrar o mover
+#### `PATCH /v1/files/{id}` — renombrar o mover
 
 ```json
 { "name": "factura-001-corregida.pdf", "folderId": "0198a4…", "moveToRoot": false }
@@ -289,13 +308,13 @@ Los tres campos son opcionales. Para **mover a la raíz** hay que enviar
 `"moveToRoot": true` — mandar `folderId: null` no alcanza, porque no se puede
 distinguir de "no querés cambiar la carpeta".
 
-#### `DELETE /files/{id}` — enviar a la papelera
+#### `DELETE /v1/files/{id}` — enviar a la papelera
 
 Borrado **suave**: `204`, el archivo va a la papelera y **sigue ocupando
 cuota**. Es deliberado: obliga a vaciar la papelera o esperar la purga, y evita
 que se acumulen datos invisibles que igual consumen espacio.
 
-#### `GET /files/{id}/versions` — historial
+#### `GET /v1/files/{id}/versions` — historial
 
 ```json
 [
@@ -314,7 +333,7 @@ que se acumulen datos invisibles que igual consumen espacio.
 El `checksumSha256` se calcula releyendo el binario ya escrito en disco, así
 que sirve para verificar integridad end-to-end contra lo que subiste.
 
-#### `POST /files/{id}/versions/{versionNumber}/restore` — restaurar versión
+#### `POST /v1/files/{id}/versions/{versionNumber}/restore` — restaurar versión
 
 `204`. **Reapunta** la versión vigente a la indicada; no crea una versión nueva
 ni consume cuota adicional.
@@ -323,10 +342,10 @@ ni consume cuota adicional.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/folders?parentId=&all=false` | Lista las carpetas hijas de `parentId` (sin él, las de la raíz). `all=true` devuelve el árbol completo del cliente. |
-| `POST` | `/folders` | Crea una carpeta: `{"name":"…","parentId":null}`. `409` si ya existe una con ese nombre en el mismo nivel. |
-| `PATCH` | `/folders/{id}` | Renombra o mueve: `{"name":…,"parentId":…,"moveToRoot":false}`. Misma semántica de `moveToRoot` que en archivos. |
-| `DELETE` | `/folders/{id}?recursive=false` | `409` si la carpeta no está vacía y no pasás `recursive=true`. |
+| `GET` | `/v1/folders?parentId=&all=false` | Lista las carpetas hijas de `parentId` (sin él, las de la raíz). `all=true` devuelve el árbol completo del cliente. |
+| `POST` | `/v1/folders` | Crea una carpeta: `{"name":"…","parentId":null}`. `409` si ya existe una con ese nombre en el mismo nivel. |
+| `PATCH` | `/v1/folders/{id}` | Renombra o mueve: `{"name":…,"parentId":…,"moveToRoot":false}`. Misma semántica de `moveToRoot` que en archivos. |
+| `DELETE` | `/v1/folders/{id}?recursive=false` | `409` si la carpeta no está vacía y no pasás `recursive=true`. |
 
 `FolderDto` incluye un `path` cacheado (`/facturas/2026`), así que no hace falta
 reconstruir la jerarquía a mano para mostrar una ruta.
@@ -335,9 +354,9 @@ reconstruir la jerarquía a mano para mostrar una ruta.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/trash` | Lista los archivos borrados, con `deletedAt`, `purgeAt` y `daysUntilPurge`. |
-| `POST` | `/trash/{id}/restore` | Saca el archivo de la papelera. `409` si en el destino ya existe otro archivo activo con el mismo nombre. |
-| `DELETE` | `/trash/{id}` | Borrado **irreversible**: elimina el binario de todas las versiones y **libera la cuota**. |
+| `GET` | `/v1/trash` | Lista los archivos borrados, con `deletedAt`, `purgeAt` y `daysUntilPurge`. |
+| `POST` | `/v1/trash/{id}/restore` | Saca el archivo de la papelera. `409` si en el destino ya existe otro archivo activo con el mismo nombre. |
+| `DELETE` | `/v1/trash/{id}` | Borrado **irreversible**: elimina el binario de todas las versiones y **libera la cuota**. |
 
 Si la carpeta original fue eliminada mientras el archivo estaba en la papelera,
 el archivo se restaura en la **raíz** en lugar de fallar.
@@ -400,9 +419,9 @@ Dos cosas importantes sobre la cuota:
   cuota no pueden pasar ambas: la validación ocurre dentro de la misma sentencia
   que incrementa el consumo. Si no entra, recibís `413`.
 
-Podés consultar tu consumo con `GET /me/usage` (canal JWT).
+Podés consultar tu consumo con `GET /v1/me/usage` (canal JWT).
 
-### Versionado
+### Versionado de archivos
 
 Subir un archivo cuyo nombre **y** carpeta coinciden con uno existente no
 duplica: agrega una versión al archivo existente, incrementando
@@ -444,8 +463,8 @@ Los errores de validación agregan un diccionario `errors`:
 | Código | Cuándo | Qué hacer |
 |---|---|---|
 | `400` | Validación: extensión no permitida, nombre inválido, archivo vacío, paginación fuera de rango. | Corregir el request; reintentar no ayuda. |
-| `401` | Falta la key, está mal formada, es inválida, fue revocada, o la cuenta está inactiva. | Revisar la credencial con `GET /whoami`. |
-| `403` | Autenticado, pero sin permiso para ese endpoint (p. ej. un JWT de super-admin contra `/files`, o de cliente contra `/admin`). Presentar la credencial del canal equivocado da `401`, no `403`, porque el otro esquema no encuentra credencial alguna. | Usar el canal correcto. |
+| `401` | Falta la key, está mal formada, es inválida, fue revocada, o la cuenta está inactiva. | Revisar la credencial con `GET /v1/whoami`. |
+| `403` | Autenticado, pero sin permiso para ese endpoint (p. ej. un JWT de super-admin contra `/v1/files`, o de cliente contra `/v1/admin`). Presentar la credencial del canal equivocado da `401`, no `403`, porque el otro esquema no encuentra credencial alguna. | Usar el canal correcto. |
 | `404` | El recurso no existe **o no es tuyo**. | No distinguir entre ambos casos es deliberado: no filtra la existencia de datos de otros clientes. |
 | `409` | Conflicto de nombres: carpeta duplicada, carpeta no vacía sin `recursive`, restaurar sobre un nombre ya ocupado. | Resolver el conflicto (renombrar, `recursive=true`, etc.). |
 | `413` | Supera el tamaño máximo o no entra en la cuota. | Liberar espacio (vaciar papelera) o pedir más cuota. |
@@ -482,7 +501,7 @@ Respetá `Retry-After` en vez de reintentar a ciegas. Para cargas masivas,
 conviene pedir un `rateLimitPerMinute` mayor para esa key en lugar de
 paralelizar contra el límite.
 
-Aparte, `/auth/*` tiene un límite propio de **10 peticiones por minuto por IP**,
+Aparte, `/v1/auth/*` tiene un límite propio de **10 peticiones por minuto por IP**,
 para frenar fuerza bruta contra el login.
 
 ---
@@ -496,17 +515,17 @@ para frenar fuerza bruta contra el login.
 - **Una key por integración.** Así podés revocar una sin cortar las demás, y el
   audit log te dice qué integración hizo cada cosa (`uploadedByApiKeyId` queda
   registrado en cada versión).
-- **Rotá periódicamente** con `POST /me/api-keys/{id}/rotate`: devuelve un valor
+- **Rotá periódicamente** con `POST /v1/me/api-keys/{id}/rotate`: devuelve un valor
   nuevo e invalida el anterior de inmediato. Desplegá el nuevo valor antes de
   rotar, o vas a tener una ventana de `401`.
-- **Revocá lo que no uses** (`POST /me/api-keys/{id}/revoke`). `lastUsedAt` en
-  `GET /me/api-keys` te ayuda a detectar keys olvidadas.
+- **Revocá lo que no uses** (`POST /v1/me/api-keys/{id}/revoke`). `lastUsedAt` en
+  `GET /v1/me/api-keys` te ayuda a detectar keys olvidadas.
 - **Siempre HTTPS.** La key viaja en un header; sobre HTTP plano queda expuesta.
-- **Verificá el checksum** (`GET /files/{id}/versions`) si la integridad importa
+- **Verificá el checksum** (`GET /v1/files/{id}/versions`) si la integridad importa
   en tu caso de uso.
 
 Toda acción mutante queda en el audit log con actor, recurso e IP; podés
-consultarlo con `GET /me/audit-log` (canal JWT).
+consultarlo con `GET /v1/me/audit-log` (canal JWT).
 
 ---
 
@@ -611,13 +630,13 @@ integración servidor-a-servidor.
 
 | Método | Ruta | Notas |
 |---|---|---|
-| `POST` | `/auth/login` | `{"email":…,"password":…}` → access token + cookie de refresh. |
-| `POST` | `/auth/refresh` | No lleva cuerpo: usa la cookie `fs_refresh`. |
-| `POST` | `/auth/logout` | Revoca el refresh token y borra la cookie. Es idempotente: sin cookie también responde `204`. |
-| `POST` | `/auth/forgot-password` | `{"email":…}` → envía un enlace de recuperación. **Siempre responde `204`**, exista o no la cuenta: distinguirlo permitiría enumerar cuentas registradas. |
-| `POST` | `/auth/reset-password` | `{"token":…,"newPassword":…}` → canjea el enlace. El token sirve **una sola vez**, vence en 1 h, y canjearlo **cierra todas las sesiones abiertas**. |
+| `POST` | `/v1/auth/login` | `{"email":…,"password":…}` → access token + cookie de refresh. |
+| `POST` | `/v1/auth/refresh` | No lleva cuerpo: usa la cookie `fs_refresh`. |
+| `POST` | `/v1/auth/logout` | Revoca el refresh token y borra la cookie. Es idempotente: sin cookie también responde `204`. |
+| `POST` | `/v1/auth/forgot-password` | `{"email":…}` → envía un enlace de recuperación. **Siempre responde `204`**, exista o no la cuenta: distinguirlo permitiría enumerar cuentas registradas. |
+| `POST` | `/v1/auth/reset-password` | `{"token":…,"newPassword":…}` → canjea el enlace. El token sirve **una sola vez**, vence en 1 h, y canjearlo **cierra todas las sesiones abiertas**. |
 
-Los cuatro endpoints de `/auth` comparten un límite de **10 peticiones por
+Los cuatro endpoints de `/v1/auth` comparten un límite de **10 peticiones por
 minuto y por IP**, independiente del límite por API Key. Es lo que frena la
 fuerza bruta contra el login y el sondeo de tokens de recuperación.
 
@@ -643,11 +662,11 @@ Endpoints disponibles con JWT de rol `Client`, además de los de contenido:
 
 | Ruta | Descripción |
 |---|---|
-| `GET /me` | Perfil, cuota y overrides. |
-| `POST /me/change-password` | Revoca las demás sesiones y conserva la actual. |
-| `GET /me/usage` | Consumo, conteo de archivos, tamaño de papelera. |
-| `GET /me/stats?days=30` | Series para dashboards. |
-| `GET /me/audit-log` | Auditoría paginada, filtrable por acción, recurso y fechas. |
+| `GET /v1/me` | Perfil, cuota y overrides. |
+| `POST /v1/me/change-password` | Revoca las demás sesiones y conserva la actual. |
+| `GET /v1/me/usage` | Consumo, conteo de archivos, tamaño de papelera. |
+| `GET /v1/me/stats?days=30` | Series para dashboards. |
+| `GET /v1/me/audit-log` | Auditoría paginada, filtrable por acción, recurso y fechas. |
 | `GET/POST/PATCH /me/api-keys` | Gestión de API Keys (crear, rotar, revocar). |
 
 ---

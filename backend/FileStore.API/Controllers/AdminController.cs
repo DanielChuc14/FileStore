@@ -1,3 +1,4 @@
+using FileStore.API.Infrastructure;
 using System.Security.Claims;
 using FileStore.API.Contracts;
 using FileStore.Application.Common;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FileStore.API.Controllers;
 
 [ApiController]
-[Route("admin")]
+[Route(ApiRoutes.V1 + "/admin")]
 [Authorize(Policy = AuthPolicies.SuperAdmin)]
 public class AdminController(ISender sender) : ControllerBase
 {

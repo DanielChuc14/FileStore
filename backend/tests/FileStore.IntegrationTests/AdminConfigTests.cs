@@ -26,11 +26,11 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
     }
 
     private static async Task<AppConfigDto> GetConfigAsync(HttpClient admin) =>
-        (await admin.GetFromJsonAsync<AppConfigDto>("/admin/config"))!;
+        (await admin.GetFromJsonAsync<AppConfigDto>("/v1/admin/config"))!;
 
     private static async Task PatchMaxFileSizeAsync(HttpClient admin, long bytes)
     {
-        var response = await admin.PatchAsJsonAsync("/admin/config", new { maxFileSizeBytes = bytes });
+        var response = await admin.PatchAsJsonAsync("/v1/admin/config", new { maxFileSizeBytes = bytes });
         response.EnsureSuccessStatusCode();
     }
 
@@ -53,7 +53,7 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
             // 2000 bytes contra un maximo de 1024: debe rechazarse con 413. Si la
             // config fuera decorativa, este upload pasaria.
             using var form = FileForm("grande.txt", new string('x', 2000));
-            var response = await client.PostAsync("/files", form);
+            var response = await client.PostAsync("/v1/files", form);
 
             Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
         }
@@ -72,7 +72,7 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
 
         try
         {
-            var patch = await admin.PatchAsJsonAsync("/admin/config", new { trashRetentionDays = 99 });
+            var patch = await admin.PatchAsJsonAsync("/v1/admin/config", new { trashRetentionDays = 99 });
             patch.EnsureSuccessStatusCode();
 
             var updated = await GetConfigAsync(admin);
@@ -80,7 +80,7 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
         }
         finally
         {
-            await admin.PatchAsJsonAsync("/admin/config",
+            await admin.PatchAsJsonAsync("/v1/admin/config",
                 new { trashRetentionDays = original.TrashRetentionDays });
         }
     }
@@ -91,16 +91,16 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var before = await admin.GetFromJsonAsync<AdminStatsDto>("/admin/stats");
+        var before = await admin.GetFromJsonAsync<AdminStatsDto>("/v1/admin/stats");
 
         var (_, email, password) = await fixture.CreateClientAsync();
         var token = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(token);
         using var form = FileForm("stats.txt", new string('z', 500));
-        var upload = await client.PostAsync("/files", form);
+        var upload = await client.PostAsync("/v1/files", form);
         Assert.Equal(HttpStatusCode.Created, upload.StatusCode);
 
-        var after = await admin.GetFromJsonAsync<AdminStatsDto>("/admin/stats");
+        var after = await admin.GetFromJsonAsync<AdminStatsDto>("/v1/admin/stats");
 
         // Las stats cuentan datos reales: hay un cliente mas y al menos 500 bytes mas.
         Assert.True(after!.TotalClients > before!.TotalClients);
@@ -114,7 +114,7 @@ public class AdminConfigTests(IntegrationTestFixture fixture)
         var token = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(token);
 
-        var response = await client.GetAsync("/admin/config");
+        var response = await client.GetAsync("/v1/admin/config");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

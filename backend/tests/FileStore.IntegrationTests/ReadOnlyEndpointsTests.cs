@@ -30,7 +30,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var client = await admin.GetFromJsonAsync<ClientDto>($"/admin/clients/{clientId}");
+        var client = await admin.GetFromJsonAsync<ClientDto>($"/v1/admin/clients/{clientId}");
 
         Assert.Equal(clientId, client!.Id);
         Assert.Equal(email, client.Email);
@@ -46,7 +46,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
         using var client = fixture.AuthenticatedClient(jwt);
 
         // Todo /admin es del super-admin. Un cliente consulta lo suyo por /me.
-        var response = await client.GetAsync($"/admin/clients/{clientId}");
+        var response = await client.GetAsync($"/v1/admin/clients/{clientId}");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
@@ -56,7 +56,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var response = await admin.GetAsync($"/admin/clients/{Guid.NewGuid()}");
+        var response = await admin.GetAsync($"/v1/admin/clients/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -68,7 +68,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
         var adminToken = await fixture.LoginAsAdminAsync();
         using var admin = fixture.AuthenticatedClient(adminToken);
 
-        var identidad = await admin.GetFromJsonAsync<AdminWhoAmI>("/admin/whoami");
+        var identidad = await admin.GetFromJsonAsync<AdminWhoAmI>("/v1/admin/whoami");
 
         Assert.Equal(TestWebApplicationFactory.AdminEmail, identidad!.Email);
         Assert.Equal("SuperAdmin", identidad.Role);
@@ -83,7 +83,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
 
         using var client = fixture.AuthenticatedClient(jwt);
 
-        var response = await client.GetAsync("/admin/whoami");
+        var response = await client.GetAsync("/v1/admin/whoami");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
@@ -98,9 +98,9 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
 
         using var form = new MultipartFormDataContent();
         form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("contenido de prueba")), "file", "medido.txt");
-        (await client.PostAsync("/files", form)).EnsureSuccessStatusCode();
+        (await client.PostAsync("/v1/files", form)).EnsureSuccessStatusCode();
 
-        var stats = await client.GetFromJsonAsync<ClientStatsDto>("/me/stats");
+        var stats = await client.GetFromJsonAsync<ClientStatsDto>("/v1/me/stats");
 
         Assert.NotNull(stats);
         Assert.NotEmpty(stats!.Daily);
@@ -119,14 +119,14 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
         {
             using var form = new MultipartFormDataContent();
             form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("x")), "file", $"de-a-{i}.txt");
-            (await clientA.PostAsync("/files", form)).EnsureSuccessStatusCode();
+            (await clientA.PostAsync("/v1/files", form)).EnsureSuccessStatusCode();
         }
 
         var (_, emailB, passwordB) = await fixture.CreateClientAsync();
         var tokenB = await fixture.LoginAsync(emailB, passwordB);
         using var clientB = fixture.AuthenticatedClient(tokenB);
 
-        var deB = await clientB.GetFromJsonAsync<ClientStatsDto>("/me/stats");
+        var deB = await clientB.GetFromJsonAsync<ClientStatsDto>("/v1/me/stats");
 
         // El aislamiento tambien aplica a los agregados: si las cifras de B
         // incluyeran la actividad de A, revelarian su volumen de uso.
@@ -142,7 +142,7 @@ public class ReadOnlyEndpointsTests(IntegrationTestFixture fixture)
 
         // El rango esta acotado a 1..365 para que nadie pida un agregado de diez
         // años y tumbe la consulta.
-        var response = await client.GetAsync("/me/stats?days=5000");
+        var response = await client.GetAsync("/v1/me/stats?days=5000");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

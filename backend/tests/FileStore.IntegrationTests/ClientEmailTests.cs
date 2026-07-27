@@ -34,7 +34,7 @@ public class ClientEmailTests(IntegrationTestFixture fixture)
     {
         var email = $"mail-{Guid.NewGuid():N}@example.com";
 
-        var response = await admin.PostAsJsonAsync("/admin/clients", new
+        var response = await admin.PostAsJsonAsync("/v1/admin/clients", new
         {
             email,
             name = "Cliente Correo",
@@ -54,7 +54,7 @@ public class ClientEmailTests(IntegrationTestFixture fixture)
         using var admin = fixture.AuthenticatedClient(adminToken);
 
         var email = $"mail-{Guid.NewGuid():N}@example.com";
-        var response = await admin.PostAsJsonAsync("/admin/clients", new
+        var response = await admin.PostAsJsonAsync("/v1/admin/clients", new
         {
             email,
             name = "Cliente Correo",
@@ -99,7 +99,7 @@ public class ClientEmailTests(IntegrationTestFixture fixture)
 
         var (clientId, email) = await CreateRawClientAsync(admin);
 
-        var reset = await admin.PostAsync($"/admin/clients/{clientId}/reset-password", null);
+        var reset = await admin.PostAsync($"/v1/admin/clients/{clientId}/reset-password", null);
         Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
 
         var raw = await reset.Content.ReadAsStringAsync();
@@ -124,7 +124,7 @@ public class ClientEmailTests(IntegrationTestFixture fixture)
         var (_, email) = await CreateRawClientAsync(admin);
 
         // Segunda alta con el mismo email: choca y termina en 409.
-        var duplicate = await admin.PostAsJsonAsync("/admin/clients", new
+        var duplicate = await admin.PostAsJsonAsync("/v1/admin/clients", new
         {
             email,
             name = "Duplicado",

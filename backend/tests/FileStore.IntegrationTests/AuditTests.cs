@@ -29,14 +29,14 @@ public class AuditTests(IntegrationTestFixture fixture)
     {
         using var form = new MultipartFormDataContent();
         form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("contenido auditado")), "file", name);
-        var response = await client.PostAsync("/files", form);
+        var response = await client.PostAsync("/v1/files", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<UploadedFile>())!;
     }
 
     private static async Task<List<AuditEntryDto>> GetAuditAsync(HttpClient client, string? action = null)
     {
-        var url = action is null ? "/me/audit-log" : $"/me/audit-log?action={action}";
+        var url = action is null ? "/v1/me/audit-log" : $"/v1/me/audit-log?action={action}";
         var page = await client.GetFromJsonAsync<PagedAudit>(url);
         return page!.Items;
     }
@@ -72,10 +72,10 @@ public class AuditTests(IntegrationTestFixture fixture)
 
         var file = await UploadAsync(client, "descargado.txt");
 
-        var download = await client.GetAsync($"/files/{file.Id}");
+        var download = await client.GetAsync($"/v1/files/{file.Id}");
         download.EnsureSuccessStatusCode();
 
-        var delete = await client.DeleteAsync($"/files/{file.Id}");
+        var delete = await client.DeleteAsync($"/v1/files/{file.Id}");
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
         // La descarga se audita aunque no mute nada: es el acceso al contenido
@@ -91,7 +91,7 @@ public class AuditTests(IntegrationTestFixture fixture)
         var jwt = await fixture.LoginAsync(email, password);
         using var panel = fixture.AuthenticatedClient(jwt);
 
-        var created = await panel.PostAsJsonAsync("/me/api-keys", new { name = "auditoria" });
+        var created = await panel.PostAsJsonAsync("/v1/me/api-keys", new { name = "auditoria" });
         var key = await created.Content.ReadFromJsonAsync<CreateKeyResult>();
 
         using var apiClient = fixture.ApiKeyClient(key!.Value);
@@ -111,7 +111,7 @@ public class AuditTests(IntegrationTestFixture fixture)
         var token = await fixture.LoginAsync(email, password);
         using var client = fixture.AuthenticatedClient(token);
 
-        var created = await client.PostAsJsonAsync("/me/api-keys", new { name = "auditada" });
+        var created = await client.PostAsJsonAsync("/v1/me/api-keys", new { name = "auditada" });
         created.EnsureSuccessStatusCode();
 
         // Crear credenciales es de lo mas sensible que puede hacer un cliente.

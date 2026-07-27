@@ -25,7 +25,7 @@ public class RefreshTokenTests(IntegrationTestFixture fixture)
 
     private static Task<HttpResponseMessage> RefreshAsync(HttpClient client, string refreshToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/auth/refresh");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/v1/auth/refresh");
         request.Headers.Add("Cookie", $"fs_refresh={refreshToken}");
         return client.SendAsync(request);
     }
@@ -36,7 +36,7 @@ public class RefreshTokenTests(IntegrationTestFixture fixture)
         var (_, email, password) = await fixture.CreateClientAsync();
         using var client = fixture.Factory.CreateClient();
 
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var login = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
         var t1 = ExtractRefreshToken(login);
 
         var r1 = await RefreshAsync(client, t1);
@@ -56,7 +56,7 @@ public class RefreshTokenTests(IntegrationTestFixture fixture)
         var (_, email, password) = await fixture.CreateClientAsync();
         using var client = fixture.Factory.CreateClient();
 
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var login = await client.PostAsJsonAsync("/v1/auth/login", new { email, password });
         var t1 = ExtractRefreshToken(login);
 
         var r1 = await RefreshAsync(client, t1);
@@ -77,7 +77,7 @@ public class RefreshTokenTests(IntegrationTestFixture fixture)
     {
         using var client = fixture.Factory.CreateClient();
 
-        var response = await client.PostAsync("/auth/refresh", null);
+        var response = await client.PostAsync("/v1/auth/refresh", null);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

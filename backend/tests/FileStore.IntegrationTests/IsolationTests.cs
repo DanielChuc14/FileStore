@@ -33,12 +33,12 @@ public class IsolationTests(IntegrationTestFixture fixture)
         var clientA = fixture.AuthenticatedClient(tokenA);
         var clientB = fixture.AuthenticatedClient(tokenB);
 
-        var folderResponse = await clientA.PostAsJsonAsync("/folders", new { name = "privado-a" });
+        var folderResponse = await clientA.PostAsJsonAsync("/v1/folders", new { name = "privado-a" });
         var folder = await folderResponse.Content.ReadFromJsonAsync<FolderResponse>();
 
         var fileId = await UploadAsync(clientA, "secreto-de-a.txt", "contenido confidencial", folder!.Id);
 
-        var keyResponse = await clientA.PostAsJsonAsync("/me/api-keys", new { name = "key-de-a" });
+        var keyResponse = await clientA.PostAsJsonAsync("/v1/me/api-keys", new { name = "key-de-a" });
         var key = await keyResponse.Content.ReadFromJsonAsync<ApiKeyCreated>();
 
         return (clientA, clientB, fileId, folder.Id, key!.ApiKey.Id);
@@ -50,7 +50,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
         var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(content));
         form.Add(fileContent, "file", name);
 
-        var url = folderId.HasValue ? $"/files?folderId={folderId}" : "/files";
+        var url = folderId.HasValue ? $"/v1/files?folderId={folderId}" : "/v1/files";
         var response = await client.PostAsync(url, form);
         response.EnsureSuccessStatusCode();
 
@@ -63,7 +63,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (_, b, _, _, _) = await SetupAsync();
 
-        var response = await b.GetAsync("/files");
+        var response = await b.GetAsync("/v1/files");
         var json = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -75,7 +75,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (_, b, fileA, _, _) = await SetupAsync();
 
-        var response = await b.GetAsync($"/files/{fileA}");
+        var response = await b.GetAsync($"/v1/files/{fileA}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -85,11 +85,11 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (a, b, fileA, _, _) = await SetupAsync();
 
-        var deleteResponse = await b.DeleteAsync($"/files/{fileA}");
+        var deleteResponse = await b.DeleteAsync($"/v1/files/{fileA}");
         Assert.Equal(HttpStatusCode.NotFound, deleteResponse.StatusCode);
 
         // Y el archivo de A sigue ahi tras el intento.
-        var stillThere = await a.GetAsync($"/files/{fileA}/metadata");
+        var stillThere = await a.GetAsync($"/v1/files/{fileA}/metadata");
         Assert.Equal(HttpStatusCode.OK, stillThere.StatusCode);
     }
 
@@ -98,7 +98,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (_, b, fileA, _, _) = await SetupAsync();
 
-        var response = await b.GetAsync($"/files/{fileA}/versions");
+        var response = await b.GetAsync($"/v1/files/{fileA}/versions");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -108,7 +108,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (_, b, _, _, _) = await SetupAsync();
 
-        var response = await b.GetAsync("/folders?all=true");
+        var response = await b.GetAsync("/v1/folders?all=true");
         var json = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -123,7 +123,7 @@ public class IsolationTests(IntegrationTestFixture fixture)
         using var form = new MultipartFormDataContent();
         form.Add(new ByteArrayContent("intruso"u8.ToArray()), "file", "intruso.txt");
 
-        var response = await b.PostAsync($"/files?folderId={folderA}", form);
+        var response = await b.PostAsync($"/v1/files?folderId={folderA}", form);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -133,10 +133,10 @@ public class IsolationTests(IntegrationTestFixture fixture)
     {
         var (_, b, _, _, apiKeyAId) = await SetupAsync();
 
-        var patch = await b.PatchAsJsonAsync($"/me/api-keys/{apiKeyAId}", new { name = "secuestrada" });
+        var patch = await b.PatchAsJsonAsync($"/v1/me/api-keys/{apiKeyAId}", new { name = "secuestrada" });
         Assert.Equal(HttpStatusCode.NotFound, patch.StatusCode);
 
-        var revoke = await b.PostAsync($"/me/api-keys/{apiKeyAId}/revoke", null);
+        var revoke = await b.PostAsync($"/v1/me/api-keys/{apiKeyAId}/revoke", null);
         Assert.Equal(HttpStatusCode.NotFound, revoke.StatusCode);
     }
 
@@ -147,13 +147,13 @@ public class IsolationTests(IntegrationTestFixture fixture)
         var (_, emailB, passwordB) = await fixture.CreateClientAsync();
         var tokenB = await fixture.LoginAsync(emailB, passwordB);
         using var jwtB = fixture.AuthenticatedClient(tokenB);
-        var keyResponse = await jwtB.PostAsJsonAsync("/me/api-keys", new { name = "prod" });
+        var keyResponse = await jwtB.PostAsJsonAsync("/v1/me/api-keys", new { name = "prod" });
         var keyB = await keyResponse.Content.ReadFromJsonAsync<ApiKeyCreated>();
 
         var (_, _, fileA, _, _) = await SetupAsync();
 
         using var apiClientB = fixture.ApiKeyClient(keyB!.Value);
-        var response = await apiClientB.GetAsync($"/files/{fileA}");
+        var response = await apiClientB.GetAsync($"/v1/files/{fileA}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
