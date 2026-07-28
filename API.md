@@ -8,6 +8,7 @@ credenciales, hacer la primera llamada y usar todos los endpoints de contenido.
 1. [Los dos canales de autenticación](#1-los-dos-canales-de-autenticación)
 2. [Obtener una API Key](#2-obtener-una-api-key)
 3. [Base URL y primera llamada](#3-base-url-y-primera-llamada)
+   - [Conocer tus límites antes de subir](#31-conocer-tus-límites-antes-de-subir)
 4. [Flujo completo de ejemplo](#4-flujo-completo-de-ejemplo)
 5. [Referencia de endpoints](#5-referencia-de-endpoints)
 6. [Reglas y límites](#6-reglas-y-límites)
@@ -35,7 +36,7 @@ Qué acepta cada grupo de endpoints:
 | Endpoints | API Key | JWT (Client) | JWT (SuperAdmin) |
 |---|:---:|:---:|:---:|
 | `/v1/files`, `/v1/folders`, `/v1/trash` | ✅ | ✅ | ❌ |
-| `/v1/whoami` | ✅ | ❌ | ❌ |
+| `/v1/whoami`, `/v1/limits` | ✅ | ✅ | ❌ |
 | `/v1/me`, `/v1/me/api-keys` | ❌ | ✅ | ❌ |
 | `/v1/admin`, `/v1/admin/clients` | ❌ | ❌ | ✅ |
 | `/v1/auth/*`, `/health` | anónimo | | |
@@ -162,9 +163,10 @@ Qué significa el compromiso de `v1`:
   parte del contrato, y no deberían cambiar de ruta porque salga una versión
   nueva de la API.
 
-En desarrollo también está **Swagger UI** en `/swagger`, con los dos candados
-(JWT y API Key) ya configurados para probar desde el navegador. Fuera de
-desarrollo Swagger no se monta.
+El **documento OpenAPI** se sirve en `/swagger/v1/swagger.json` en todos los
+entornos, para que puedas generar un cliente en tu lenguaje en vez de escribirlo
+a mano. La **interfaz interactiva** de Swagger, en `/swagger`, solo se monta en
+desarrollo.
 
 El primer llamado recomendado es `GET /v1/whoami`: existe precisamente para
 verificar que tu key funciona y contra qué cliente resuelve, sin tener que
@@ -188,6 +190,52 @@ está bloqueada o dada de baja.
 
 > En desarrollo local sobre HTTPS el certificado es autofirmado: agregá `-k` a
 > curl (o el equivalente en tu cliente HTTP) para las pruebas locales.
+
+---
+
+## 3.1 Conocer tus límites antes de subir
+
+`GET /v1/limits` devuelve, en una sola llamada, todo lo que tu integración
+necesita saber antes de subir nada. Acepta **ambos canales**.
+
+```bash
+curl https://filestore.tudominio.com/v1/limits -H "X-Api-Key: $KEY"
+```
+
+```json
+{
+  "maxFileSizeBytes": 52428800,
+  "quotaBytes": 1073741824,
+  "usedBytes": 402653184,
+  "availableBytes": 671088640,
+  "trashRetentionDays": 30,
+  "rateLimitPerMinute": 100,
+  "allowedTypes": [
+    { "extension": "csv", "mimeType": "text/csv" },
+    { "extension": "pdf", "mimeType": "application/pdf" },
+    { "extension": "txt", "mimeType": "text/plain" }
+  ]
+}
+```
+
+**Consúltalo al arrancar y cachéalo un rato.** Los valores son los que de verdad
+se te aplican, con tus overrides si los tienes, no los globales del servidor.
+Validar en tu lado con estos datos te ahorra los `400` por extensión no
+permitida y los `413` por tamaño o cuota.
+
+Dos detalles que importan:
+
+- **Son configurables por despliegue.** Quien administra el servicio puede
+  desactivar una extensión o cambiar el tamaño máximo en cualquier momento. Si
+  los anotas a mano una vez, tu copia se queda obsoleta sin que nada te avise.
+  Consultarlos es la única forma de mantenerte al día.
+- **`availableBytes` nunca es negativo.** Si el administrador recorta tu cuota
+  por debajo de lo que ya tienes consumido —cosa permitida—, verás `0` y un
+  `usedBytes` mayor que `quotaBytes`. Significa que no cabe nada más hasta que
+  liberes espacio, y recuerda que la papelera **también ocupa**.
+
+Este endpoint es además la única forma de que una integración con **API Key**
+consulte su cuota: `/v1/me/usage` pertenece al canal JWT.
 
 ---
 

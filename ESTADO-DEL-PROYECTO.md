@@ -68,6 +68,17 @@ residuo y se pueden borrar del remoto sin perder nada.
 
 ### Decisiones que conviene recordar
 
+- **`GET /v1/limits` hace la API autodescriptiva** (2026-07-27). Devuelve las
+  extensiones permitidas, el tamaño maximo, la retencion de papelera, el rate
+  limit y la cuota, todos con el valor EFECTIVO del cliente que llama. Antes,
+  quien integraba no podia averiguar la whitelist (solo la expone un endpoint de
+  super-admin) ni el tamaño maximo (no lo exponia nadie), y como son
+  configurables por despliegue, anotarlos a mano se quedaba obsoleto en
+  silencio. Resuelve ademas un hueco del canal de API Key: `/v1/me/usage` exige
+  JWT, asi que una integracion no tenia forma de consultar su cuota.
+- **El documento OpenAPI se sirve tambien en produccion** (`/swagger/v1/swagger.json`),
+  para poder generar clientes. La interfaz interactiva sigue siendo solo de
+  desarrollo.
 - **La API va versionada bajo `/v1`** (2026-07-27), con la version en la ruta y
   no en una cabecera. El prefijo se declara en `ApiRoutes.V1` y cada controller
   lo concatena, para que la version viva en un solo sitio sin ocultar la ruta.

@@ -321,9 +321,16 @@ app.UseExceptionHandler();
 // AddProblemDetails, esto les da el mismo formato que al resto de los errores.
 app.UseStatusCodePages();
 
+// El documento OpenAPI se sirve SIEMPRE, tambien en produccion: es lo que
+// permite a quien integra generar un cliente en su lenguaje en vez de
+// escribirlo a mano. No revela nada que API.md no cuente ya, y todos los
+// endpoints siguen exigiendo credencial.
+app.UseSwagger();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    // La interfaz interactiva si queda solo en desarrollo: es una herramienta
+    // para trabajar en el proyecto, no parte de lo que se publica.
     app.UseSwaggerUI();
 }
 else
